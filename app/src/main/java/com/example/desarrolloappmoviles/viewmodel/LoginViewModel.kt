@@ -21,6 +21,7 @@ class LoginViewModel : ViewModel() {
             return true
         }
     }
+
     fun validacionContrasena(): Boolean {
         if (contrasena.length > 5) {
             return true
@@ -28,6 +29,7 @@ class LoginViewModel : ViewModel() {
             return false
         }
     }
+
     fun validarLogin() {
         errorCorreo = when {
             correo.isBlank() -> "Ingresa tu correo"
