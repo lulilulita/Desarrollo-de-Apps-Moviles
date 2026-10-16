@@ -17,6 +17,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun LoginScreen(
     viewModel: LoginViewModel,
+    abrirRegistro: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var cargando by remember { mutableStateOf(false) }
@@ -112,14 +113,24 @@ fun LoginScreen(
             if (cargando) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(20.dp),
-                    strokeWidth = 2.dp
+                    strokeWidth = 2.dp,
+                    color = LocalContentColor.current
                 )
             } else {
                 Text("Ingresar")
             }
         }
+
         if (viewModel.mensaje.isNotEmpty()) {
-            Text(text = viewModel.mensaje)
+            Text(viewModel.mensaje)
+        }
+
+        TextButton(
+            onClick = abrirRegistro,
+            enabled = !cargando,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("No tienes cuenta? Registrate")
         }
     }
 }
