@@ -18,6 +18,7 @@ import kotlinx.coroutines.launch
 fun LoginScreen(
     viewModel: LoginViewModel,
     abrirRegistro: () -> Unit,
+    abrirIncidencia: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var cargando by remember { mutableStateOf(false) }
@@ -121,8 +122,19 @@ fun LoginScreen(
             }
         }
 
+        // Como en el ejemplo Login del profesor: confirmación, sin autenticar cuentas.
         if (viewModel.mensaje.isNotEmpty()) {
-            Text(viewModel.mensaje)
+            AlertDialog(
+                onDismissRequest = { viewModel.mensaje = "" },
+                title = { Text("Validacion correcta") },
+                text = { Text("Datos validos. Puedes continuar al formulario de prueba.") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        viewModel.mensaje = ""
+                        abrirIncidencia()
+                    }) { Text("Continuar") }
+                }
+            )
         }
 
         TextButton(
