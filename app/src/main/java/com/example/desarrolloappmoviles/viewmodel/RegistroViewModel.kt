@@ -50,7 +50,7 @@ class RegistroViewModel : ViewModel() {
             errorContrasena.isEmpty() &&
             errorConfirmacion.isEmpty()
         ) {
-            "Datos validos. Guardado pendiente."
+            "Formulario validado correctamente. El guardado queda para otra etapa."
         } else {
             ""
         }
