@@ -4,8 +4,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import com.example.desarrolloappmoviles.repository.IncidenciaRepository
+import androidx.lifecycle.viewModelScope
+import com.example.desarrolloappmoviles.model.IncidenciaEntity
+import kotlinx.coroutines.launch
 
-class IncidenciaViewModel : ViewModel() {
+class IncidenciaViewModel(
+    private val repository: IncidenciaRepository
+) : ViewModel() {
     val categorias = listOf("Iluminación", "Espacio público", "Convivencia")
     val prioridades = listOf("Baja", "Media", "Alta")
     val sectores = listOf("Sector A", "Sector B", "Sector C")
@@ -19,6 +25,8 @@ class IncidenciaViewModel : ViewModel() {
     var errorDescripcion by mutableStateOf("")
     var errorPrioridad by mutableStateOf("")
     var errorSector by mutableStateOf("")
+
+    var errorGuardado by mutableStateOf("")
     var mostrarConfirmacion by mutableStateOf(false)
 
     fun validarIncidencia() {
@@ -32,9 +40,31 @@ class IncidenciaViewModel : ViewModel() {
         errorPrioridad = if (prioridad !in prioridades) "Selecciona una prioridad" else ""
         errorSector = if (sector !in sectores) "Selecciona un sector ficticio" else ""
 
-        // Solo validamos el formulario: aún no guardamos ni enviamos datos.
-        mostrarConfirmacion = errorCategoria.isEmpty() && errorDescripcion.isEmpty() &&
-            errorPrioridad.isEmpty() && errorSector.isEmpty()
+        val formularioValido =
+            errorCategoria.isEmpty() &&
+                    errorDescripcion.isEmpty() &&
+                    errorPrioridad.isEmpty() &&
+                    errorSector.isEmpty()
+
+        mostrarConfirmacion = false
+        errorGuardado = ""
+
+        if (formularioValido) {
+            viewModelScope.launch {
+                try {
+                    val incidencia = IncidenciaEntity(
+                        categoria = categoria,
+                        descripcion = descripcion.trim(),
+                        prioridad = prioridad,
+                        sector = sector
+                    )
+                    repository.guardar(incidencia)
+                    mostrarConfirmacion = true
+                } catch (error: Exception) {
+                    errorGuardado = "No se pudo guardar la incidencia."
+                }
+            }
+        }
     }
 
     fun limpiarFormulario() {

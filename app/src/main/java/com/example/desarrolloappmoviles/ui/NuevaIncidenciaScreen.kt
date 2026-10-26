@@ -55,10 +55,15 @@ fun NuevaIncidenciaScreen(
             alSeleccionar = { viewModel.sector = it; viewModel.errorSector = "" }
         )
 
-        Text("Prueba de formulario: todavía no guarda incidencias. Foto y ubicación quedan para otra etapa.",
-            style = MaterialTheme.typography.bodySmall)
+
         Button(onClick = { viewModel.validarIncidencia() }, modifier = Modifier.fillMaxWidth()) {
-            Text("Validar incidencia")
+            Text("Guardar incidencia")
+        }
+        if (viewModel.errorGuardado.isNotEmpty()) {
+            Text(
+                text = viewModel.errorGuardado,
+                color = MaterialTheme.colorScheme.error
+            )
         }
         TextButton(onClick = volverLogin, modifier = Modifier.fillMaxWidth()) { Text("Volver al login") }
     }
@@ -66,15 +71,21 @@ fun NuevaIncidenciaScreen(
     if (viewModel.mostrarConfirmacion) {
         AlertDialog(
             onDismissRequest = { viewModel.mostrarConfirmacion = false },
-            title = { Text("Formulario válido") },
+            title = { Text("Incidencia registrada") },
             text = {
-                Text("Categoría: ${viewModel.categoria}\nPrioridad: ${viewModel.prioridad}\nSector: ${viewModel.sector}\n\nEs una simulación. No se guardó ni envió la incidencia.")
+                Text(
+                    "La incidencia se guardó correctamente.\n\n" +
+                            "Categoría: ${viewModel.categoria}\n" +
+                            "Descripción: ${viewModel.descripcion.trim()}\n" +
+                            "Prioridad: ${viewModel.prioridad}\n" +
+                            "Sector: ${viewModel.sector}"
+                )
             },
             confirmButton = {
                 TextButton(onClick = { viewModel.mostrarConfirmacion = false }) { Text("Aceptar") }
             },
             dismissButton = {
-                TextButton(onClick = { viewModel.limpiarFormulario() }) { Text("Nueva prueba") }
+                TextButton(onClick = { viewModel.limpiarFormulario() }) { Text("Nueva incidencia") }
             }
         )
     }

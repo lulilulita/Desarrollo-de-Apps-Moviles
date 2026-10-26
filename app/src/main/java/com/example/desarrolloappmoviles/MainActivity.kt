@@ -24,7 +24,11 @@ import com.example.desarrolloappmoviles.viewmodel.RegistroViewModel
 
 class MainActivity : ComponentActivity() {
 
-    private val incidenciaViewModel: IncidenciaViewModel by viewModels()
+    private val incidenciaViewModel by lazy {
+        IncidenciaViewModel(
+            (application as CuidAppApplication).incidenciaRepository
+        )
+    }
     private val loginViewModel: LoginViewModel by viewModels()
     private val registroViewModel: RegistroViewModel by viewModels()
 
