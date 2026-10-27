@@ -65,7 +65,7 @@ fun NuevaIncidenciaScreen(
                 color = MaterialTheme.colorScheme.error
             )
         }
-        TextButton(onClick = volverLogin, modifier = Modifier.fillMaxWidth()) { Text("Volver al login") }
+        TextButton(onClick = volverLogin, modifier = Modifier.fillMaxWidth()) { Text("Volver al inicio") }
     }
 
     if (viewModel.mostrarConfirmacion) {

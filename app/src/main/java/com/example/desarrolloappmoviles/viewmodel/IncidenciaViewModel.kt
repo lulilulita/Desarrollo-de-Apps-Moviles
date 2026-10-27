@@ -15,7 +15,7 @@ class IncidenciaViewModel(
     val categorias = listOf("Iluminación", "Espacio público", "Convivencia")
     val prioridades = listOf("Baja", "Media", "Alta")
     val sectores = listOf("Sector A", "Sector B", "Sector C")
-
+    val incidencias = repository.observarIncidencias()
     var categoria by mutableStateOf("")
     var descripcion by mutableStateOf("")
     var prioridad by mutableStateOf("Media")

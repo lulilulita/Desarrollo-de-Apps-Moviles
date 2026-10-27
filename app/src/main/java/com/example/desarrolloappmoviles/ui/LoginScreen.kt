@@ -11,8 +11,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.example.desarrolloappmoviles.viewmodel.LoginViewModel
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 @Composable
 fun LoginScreen(
@@ -21,9 +19,6 @@ fun LoginScreen(
     abrirIncidencia: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var cargando by remember { mutableStateOf(false) }
-    val coroutineScope = rememberCoroutineScope()
-
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -40,7 +35,7 @@ fun LoginScreen(
         )
 
         Text(
-            text = "Iniciar sesion",
+            text = "Iniciar sesión",
             style = MaterialTheme.typography.headlineSmall
         )
 
@@ -53,8 +48,8 @@ fun LoginScreen(
                 viewModel.errorCorreo = ""
                 viewModel.mensaje = ""
             },
-            enabled = !cargando,
-            label = { Text("Correo electronico") },
+            enabled = !viewModel.cargando,
+            label = { Text("Correo electrónico") },
             placeholder = { Text("usuario@ejemplo.com") },
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Email
@@ -74,8 +69,8 @@ fun LoginScreen(
                 viewModel.errorContrasena = ""
                 viewModel.mensaje = ""
             },
-            enabled = !cargando,
-            label = { Text("Contrasena") },
+            enabled = !viewModel.cargando,
+            label = { Text("Contraseña") },
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Password
             ),
@@ -89,29 +84,13 @@ fun LoginScreen(
         )
 
         Button(
-            onClick = {
-                viewModel.validarLogin()
-
-                if (
-                    viewModel.errorCorreo.isEmpty() &&
-                    viewModel.errorContrasena.isEmpty()
-                ) {
-                    viewModel.mensaje = ""
-                    cargando = true
-
-                    coroutineScope.launch {
-                        delay(2000)
-                        cargando = false
-                        viewModel.validarLogin()
-                    }
-                }
-            },
-            enabled = !cargando,
+            onClick = { viewModel.validarLogin() },
+            enabled = !viewModel.cargando,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(50.dp)
         ) {
-            if (cargando) {
+            if (viewModel.cargando) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(20.dp),
                     strokeWidth = 2.dp,
@@ -122,27 +101,52 @@ fun LoginScreen(
             }
         }
 
-        // Como en el ejemplo Login del profesor: confirmación, sin autenticar cuentas.
         if (viewModel.mensaje.isNotEmpty()) {
             AlertDialog(
-                onDismissRequest = { viewModel.mensaje = "" },
-                title = { Text("Validacion correcta") },
-                text = { Text("Datos validos. Puedes continuar al formulario de prueba.") },
+                onDismissRequest = {
+                    viewModel.mensaje = ""
+                },
+                title = {
+                    Text(
+                        if (viewModel.loginExitoso) {
+                            "Inicio de sesión"
+                        } else {
+                            "No se pudo iniciar sesión"
+                        }
+                    )
+                },
+                text = {
+                    Text(viewModel.mensaje)
+                },
                 confirmButton = {
-                    TextButton(onClick = {
-                        viewModel.mensaje = ""
-                        abrirIncidencia()
-                    }) { Text("Continuar") }
+                    TextButton(
+                        onClick = {
+                            val accesoPermitido = viewModel.loginExitoso
+                            viewModel.mensaje = ""
+
+                            if (accesoPermitido) {
+                                abrirIncidencia()
+                            }
+                        }
+                    ) {
+                        Text(
+                            if (viewModel.loginExitoso) {
+                                "Continuar"
+                            } else {
+                                "Aceptar"
+                            }
+                        )
+                    }
                 }
             )
         }
 
         TextButton(
             onClick = abrirRegistro,
-            enabled = !cargando,
+            enabled = !viewModel.cargando,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("No tienes cuenta? Registrate")
+            Text("¿No tienes cuenta? Regístrate")
         }
     }
 }
