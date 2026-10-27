@@ -4,18 +4,29 @@ import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -24,9 +35,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -72,37 +85,139 @@ fun DetalleIncidenciaScreen(
         ).format(Date(datosIncidencia.fechaRegistro))
     }
 
+    val estadoNormalizado = datosIncidencia.estado.trim().lowercase()
+
+    val colorEstado = when (estadoNormalizado) {
+        "cerrada" -> MaterialTheme.colorScheme.tertiaryContainer
+        "en revisión" -> MaterialTheme.colorScheme.secondaryContainer
+        else -> MaterialTheme.colorScheme.primaryContainer
+    }
+
+    val colorTextoEstado = when (estadoNormalizado) {
+        "cerrada" -> MaterialTheme.colorScheme.onTertiaryContainer
+        "en revisión" -> MaterialTheme.colorScheme.onSecondaryContainer
+        else -> MaterialTheme.colorScheme.onPrimaryContainer
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(24.dp),
+            .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(
             text = "Detalle de incidencia",
-            style = MaterialTheme.typography.headlineMedium
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold
         )
 
-        Card(modifier = Modifier.fillMaxWidth()) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(22.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer
+            )
+        ) {
             Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                modifier = Modifier.padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Text(
                     text = datosIncidencia.categoria,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Surface(
+                    color = colorEstado,
+                    shape = RoundedCornerShape(50)
+                ) {
+                    Text(
+                        text = "Estado: ${datosIncidencia.estado}",
+                        color = colorTextoEstado,
+                        style = MaterialTheme.typography.labelLarge,
+                        modifier = Modifier.padding(
+                            horizontal = 14.dp,
+                            vertical = 7.dp
+                        )
+                    )
+                }
+
+                Text(
+                    text = datosIncidencia.descripcion,
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            }
+        }
+
+        if (foto != null) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp)
+            ) {
+                Image(
+                    bitmap = foto.asImageBitmap(),
+                    contentDescription = "Foto de evidencia de la incidencia",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(220.dp)
+                        .clip(RoundedCornerShape(20.dp)),
+                    contentScale = ContentScale.Crop
+                )
+            }
+        }
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant
+            )
+        ) {
+            Column(
+                modifier = Modifier.padding(18.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                Text(
+                    text = "Antecedentes",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
-                Text("Descripción: ${datosIncidencia.descripcion}")
-                Text("Prioridad: ${datosIncidencia.prioridad}")
-                Text("Sector: ${datosIncidencia.sector}")
-                Text("Estado: ${datosIncidencia.estado}")
-                Text("Responsable: ${datosIncidencia.responsable}")
-                Text("Fecha: $fecha")
 
+                DatoIncidencia(
+                    icono = Icons.Filled.LocationOn,
+                    etiqueta = "Sector",
+                    valor = datosIncidencia.sector
+                )
+                DatoIncidencia(
+                    icono = Icons.Filled.Info,
+                    etiqueta = "Prioridad",
+                    valor = datosIncidencia.prioridad
+                )
+                DatoIncidencia(
+                    icono = Icons.Filled.Person,
+                    etiqueta = "Responsable",
+                    valor = datosIncidencia.responsable
+                )
+                Text(
+                    text = "Fecha de registro: $fecha",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+        }
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(20.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(18.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 Text(
                     text = "Historial de acciones",
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
@@ -113,28 +228,21 @@ fun DetalleIncidenciaScreen(
             }
         }
 
-        if (foto != null) {
-            Image(
-                bitmap = foto.asImageBitmap(),
-                contentDescription = "Foto de evidencia de la incidencia",
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(220.dp)
-                    .clip(RoundedCornerShape(12.dp)),
-                contentScale = ContentScale.Crop
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.secondaryContainer
             )
-        } else {
-            Text("Esta incidencia no tiene una foto adjunta.")
-        }
-
-        Card(modifier = Modifier.fillMaxWidth()) {
+        ) {
             Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                modifier = Modifier.padding(18.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Text(
                     text = "Gestión municipal",
-                    style = MaterialTheme.typography.titleMedium
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
                 )
 
                 Button(
@@ -147,8 +255,14 @@ fun DetalleIncidenciaScreen(
                         )
                     },
                     enabled = datosIncidencia.estado != "Cerrada",
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp)
                 ) {
+                    Icon(
+                        imageVector = Icons.Filled.Person,
+                        contentDescription = null,
+                        modifier = Modifier.padding(end = 8.dp)
+                    )
                     Text("Asignar inspector")
                 }
 
@@ -157,8 +271,14 @@ fun DetalleIncidenciaScreen(
                         mostrarConfirmacionCerrar = true
                     },
                     enabled = datosIncidencia.estado != "Cerrada",
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp)
                 ) {
+                    Icon(
+                        imageVector = Icons.Filled.CheckCircle,
+                        contentDescription = null,
+                        modifier = Modifier.padding(end = 8.dp)
+                    )
                     Text("Cerrar caso")
                 }
 
@@ -178,19 +298,25 @@ fun DetalleIncidenciaScreen(
             )
         }
 
-        Button(
+        OutlinedButton(
             onClick = volver,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(14.dp)
         ) {
             Text("Volver a incidencias")
         }
 
-        OutlinedButton(
+        TextButton(
             onClick = {
                 mostrarConfirmacionEliminar = true
             },
             modifier = Modifier.fillMaxWidth()
         ) {
+            Icon(
+                imageVector = Icons.Filled.Delete,
+                contentDescription = null,
+                modifier = Modifier.padding(end = 8.dp)
+            )
             Text("Eliminar incidencia")
         }
     }
@@ -290,5 +416,35 @@ fun DetalleIncidenciaScreen(
                 }
             }
         )
+    }
+}
+
+@Composable
+private fun DatoIncidencia(
+    icono: ImageVector,
+    etiqueta: String,
+    valor: String
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Icon(
+            imageVector = icono,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(22.dp)
+        )
+        Column {
+            Text(
+                text = etiqueta,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = valor,
+                style = MaterialTheme.typography.bodyLarge
+            )
+        }
     }
 }

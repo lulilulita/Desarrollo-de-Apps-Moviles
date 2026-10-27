@@ -25,6 +25,7 @@ import com.example.desarrolloappmoviles.viewmodel.RegistroViewModel
 import androidx.compose.runtime.remember
 import com.example.desarrolloappmoviles.model.IncidenciaEntity
 import com.example.desarrolloappmoviles.ui.DetalleIncidenciaScreen
+import com.example.desarrolloappmoviles.ui.MiPerfilScreen
 class MainActivity : ComponentActivity() {
 
     private val incidenciaViewModel by lazy {
@@ -62,8 +63,15 @@ class MainActivity : ComponentActivity() {
             var mostrarMisIncidencias by rememberSaveable {
                 mutableStateOf(false)
             }
+            var mostrarPerfil by rememberSaveable {
+                mutableStateOf(false)
+            }
             var incidenciaSeleccionada by remember {
                 mutableStateOf<IncidenciaEntity?>(null)
+            }
+            BackHandler(enabled = mostrarPerfil) {
+                mostrarPerfil = false
+                mostrarInicio = true
             }
 
             BackHandler(enabled = mostrarMisIncidencias) {
@@ -137,12 +145,31 @@ class MainActivity : ComponentActivity() {
                                     mostrarInicio = false
                                     mostrarIncidencia = true
                                 },
+                                abrirPerfil = {
+                                    mostrarInicio = false
+                                    mostrarPerfil = true
+                                },
                                 verIncidencias = {
                                     mostrarInicio = false
                                     mostrarMisIncidencias = true
                                 },
                                 cerrarSesion = {
                                     loginViewModel.cerrarSesion()
+                                    mostrarInicio = false
+                                },
+                                modifier = Modifier.padding(innerPadding)
+                            )
+                        }
+                        mostrarPerfil -> {
+                            MiPerfilScreen(
+                                nombreUsuario = loginViewModel.nombreUsuario,
+                                volverInicio = {
+                                    mostrarPerfil = false
+                                    mostrarInicio = true
+                                },
+                                cerrarSesion = {
+                                    loginViewModel.cerrarSesion()
+                                    mostrarPerfil = false
                                     mostrarInicio = false
                                 },
                                 modifier = Modifier.padding(innerPadding)
