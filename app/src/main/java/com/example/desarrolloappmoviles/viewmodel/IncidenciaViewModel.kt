@@ -8,6 +8,9 @@ import com.example.desarrolloappmoviles.repository.IncidenciaRepository
 import androidx.lifecycle.viewModelScope
 import com.example.desarrolloappmoviles.model.IncidenciaEntity
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class IncidenciaViewModel(
     private val repository: IncidenciaRepository
@@ -15,7 +18,9 @@ class IncidenciaViewModel(
     val categorias = listOf("Iluminación", "Espacio público", "Convivencia")
     val prioridades = listOf("Baja", "Media", "Alta")
     val sectores = listOf("Sector A", "Sector B", "Sector C")
+
     val incidencias = repository.observarIncidencias()
+    fun observarIncidencia(id: Long) = repository.observarIncidencia(id)
     var categoria by mutableStateOf("")
     var descripcion by mutableStateOf("")
     var prioridad by mutableStateOf("Media")
@@ -27,6 +32,8 @@ class IncidenciaViewModel(
     var errorSector by mutableStateOf("")
 
     var errorGuardado by mutableStateOf("")
+
+    var errorGestion by mutableStateOf("")
     var mostrarConfirmacion by mutableStateOf(false)
 
     var eliminacionExitosa by mutableStateOf(false)
@@ -70,6 +77,7 @@ class IncidenciaViewModel(
                         fotoEvidencia = fotoEvidencia,
                         correoUsuario = correoUsuarioActual.trim().lowercase()
                     )
+
                     repository.guardar(incidencia)
                     mostrarConfirmacion = true
                 } catch (error: Exception) {
@@ -89,6 +97,43 @@ class IncidenciaViewModel(
         errorPrioridad = ""
         errorSector = ""
         mostrarConfirmacion = false
+    }
+
+    fun registrarAccionGestion(
+        incidencia: IncidenciaEntity,
+        accion: String,
+        nuevoEstado: String = incidencia.estado,
+        nuevoResponsable: String = incidencia.responsable
+    ) {
+        viewModelScope.launch {
+            errorGestion = ""
+
+            try {
+                val fecha = SimpleDateFormat(
+                    "dd/MM/yyyy HH:mm",
+                    Locale.getDefault()
+                ).format(Date())
+
+                val nuevaAccion = "$fecha - $accion"
+                val historialActual = incidencia.historialAcciones.orEmpty()
+
+                val historialActualizado = if (historialActual.isBlank()) {
+                    nuevaAccion
+                } else {
+                    "$historialActual\n$nuevaAccion"
+                }
+
+                repository.actualizar(
+                    incidencia.copy(
+                        estado = nuevoEstado,
+                        responsable = nuevoResponsable,
+                        historialAcciones = historialActualizado
+                    )
+                )
+            } catch (error: Exception) {
+                errorGestion = "No se pudo actualizar la incidencia."
+            }
+        }
     }
     fun eliminarIncidencia(incidencia: IncidenciaEntity) {
         eliminacionExitosa = false

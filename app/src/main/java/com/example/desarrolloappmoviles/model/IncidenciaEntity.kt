@@ -17,6 +17,7 @@ data class IncidenciaEntity(
     val latitud: Double? = null,
     val longitud: Double? = null,
     val fotoEvidencia: ByteArray? = null,
-    val correoUsuario: String? = null
+    val correoUsuario: String? = null,
+    val historialAcciones: String? = null
 )
 
