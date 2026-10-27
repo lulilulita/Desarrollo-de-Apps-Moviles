@@ -16,7 +16,7 @@ class CuidAppApplication : Application() {
             CuidAppDatabase::class.java,
             "cuidapp_database"
         )
-            .addMigrations(MIGRATION_1_2)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
             .build()
     }
 
@@ -43,6 +43,30 @@ class CuidAppApplication : Application() {
                 database.execSQL(
                     "CREATE UNIQUE INDEX IF NOT EXISTS `index_usuarios_correo` " +
                             "ON `usuarios` (`correo`)"
+                )
+            }
+        }
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL(
+                    "ALTER TABLE `usuarios` ADD COLUMN `nombre` TEXT NOT NULL DEFAULT ''"
+                )
+                database.execSQL(
+                    "ALTER TABLE `usuarios` ADD COLUMN `apellido` TEXT NOT NULL DEFAULT ''"
+                )
+            }
+        }
+        private val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL(
+                    "ALTER TABLE `incidencias` ADD COLUMN `fotoEvidencia` BLOB"
+                )
+            }
+        }
+        private val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL(
+                    "ALTER TABLE `incidencias` ADD COLUMN `correoUsuario` TEXT"
                 )
             }
         }

@@ -38,7 +38,43 @@ fun RegistroScreen(
             style = MaterialTheme.typography.headlineSmall
         )
 
-        Text("Completa tus datos de prueba")
+        Text("Crea tu cuenta para registrar incidencias comunitarias.")
+
+        OutlinedTextField(
+            value = viewModel.nombre,
+            onValueChange = {
+                viewModel.nombre = it
+                viewModel.errorNombre = ""
+                viewModel.mensaje = ""
+            },
+            label = { Text("Nombre") },
+            isError = viewModel.errorNombre.isNotEmpty(),
+            supportingText = {
+                if (viewModel.errorNombre.isNotEmpty()) {
+                    Text(viewModel.errorNombre)
+                }
+            },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        OutlinedTextField(
+            value = viewModel.apellido,
+            onValueChange = {
+                viewModel.apellido = it
+                viewModel.errorApellido = ""
+                viewModel.mensaje = ""
+            },
+            label = { Text("Apellido") },
+            isError = viewModel.errorApellido.isNotEmpty(),
+            supportingText = {
+                if (viewModel.errorApellido.isNotEmpty()) {
+                    Text(viewModel.errorApellido)
+                }
+            },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth()
+        )
 
         OutlinedTextField(
             value = viewModel.correo,
@@ -107,13 +143,19 @@ fun RegistroScreen(
                 .fillMaxWidth()
                 .height(50.dp)
         ) {
-            Text("Validar registro")
+            Text("Crear cuenta")
         }
 
         if (viewModel.mensaje.isNotEmpty()) {
-            Text(viewModel.mensaje)
+            Text(
+                text = viewModel.mensaje,
+                color = if (viewModel.registroExitoso) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.error
+                }
+            )
         }
-
         TextButton(
             onClick = volverLogin,
             modifier = Modifier.fillMaxWidth()

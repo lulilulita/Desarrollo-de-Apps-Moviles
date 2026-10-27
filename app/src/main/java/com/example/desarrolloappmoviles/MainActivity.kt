@@ -22,7 +22,9 @@ import com.example.desarrolloappmoviles.ui.RegistroScreen
 import com.example.desarrolloappmoviles.viewmodel.IncidenciaViewModel
 import com.example.desarrolloappmoviles.viewmodel.LoginViewModel
 import com.example.desarrolloappmoviles.viewmodel.RegistroViewModel
-
+import androidx.compose.runtime.remember
+import com.example.desarrolloappmoviles.model.IncidenciaEntity
+import com.example.desarrolloappmoviles.ui.DetalleIncidenciaScreen
 class MainActivity : ComponentActivity() {
 
     private val incidenciaViewModel by lazy {
@@ -60,6 +62,9 @@ class MainActivity : ComponentActivity() {
             var mostrarMisIncidencias by rememberSaveable {
                 mutableStateOf(false)
             }
+            var incidenciaSeleccionada by remember {
+                mutableStateOf<IncidenciaEntity?>(null)
+            }
 
             BackHandler(enabled = mostrarMisIncidencias) {
                 mostrarMisIncidencias = false
@@ -78,12 +83,27 @@ class MainActivity : ComponentActivity() {
             BackHandler(enabled = mostrarRegistro) {
                 mostrarRegistro = false
             }
+            BackHandler(enabled = incidenciaSeleccionada != null) {
+                incidenciaSeleccionada = null
+                mostrarMisIncidencias = true
+            }
 
             MaterialTheme {
                 Scaffold(
                     modifier = Modifier.fillMaxSize()
                 ) { innerPadding ->
                     when {
+                        incidenciaSeleccionada != null -> {
+                            DetalleIncidenciaScreen(
+                                viewModel = incidenciaViewModel,
+                                incidencia = incidenciaSeleccionada!!,
+                                volver = {
+                                    incidenciaSeleccionada = null
+                                    mostrarMisIncidencias = true
+                                },
+                                modifier = Modifier.padding(innerPadding)
+                            )
+                        }
                         mostrarIncidencia -> {
                             NuevaIncidenciaScreen(
                                 viewModel = incidenciaViewModel,
@@ -98,6 +118,10 @@ class MainActivity : ComponentActivity() {
                         mostrarMisIncidencias -> {
                             MisIncidenciasScreen(
                                 viewModel = incidenciaViewModel,
+                                abrirDetalle = { incidencia ->
+                                    incidenciaSeleccionada = incidencia
+                                    mostrarMisIncidencias = false
+                                },
                                 volverInicio = {
                                     mostrarMisIncidencias = false
                                     mostrarInicio = true
@@ -108,6 +132,7 @@ class MainActivity : ComponentActivity() {
 
                         mostrarInicio -> {
                             InicioScreen(
+                                nombreUsuario = loginViewModel.nombreUsuario,
                                 abrirNuevaIncidencia = {
                                     mostrarInicio = false
                                     mostrarIncidencia = true
@@ -115,6 +140,10 @@ class MainActivity : ComponentActivity() {
                                 verIncidencias = {
                                     mostrarInicio = false
                                     mostrarMisIncidencias = true
+                                },
+                                cerrarSesion = {
+                                    loginViewModel.cerrarSesion()
+                                    mostrarInicio = false
                                 },
                                 modifier = Modifier.padding(innerPadding)
                             )
@@ -134,6 +163,7 @@ class MainActivity : ComponentActivity() {
                             LoginScreen(
                                 viewModel = loginViewModel,
                                 abrirIncidencia = {
+                                    incidenciaViewModel.correoUsuarioActual = loginViewModel.correo
                                     loginViewModel.contrasena = ""
                                     mostrarInicio = true
                                 },

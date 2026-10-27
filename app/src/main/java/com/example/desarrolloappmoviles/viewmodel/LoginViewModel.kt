@@ -20,9 +20,20 @@ class LoginViewModel(
     var mensaje by mutableStateOf("")
     var cargando by mutableStateOf(false)
     var loginExitoso by mutableStateOf(false)
+    var nombreUsuario by mutableStateOf("")
 
     private fun validacionCorreo(): Boolean =
         correo.trim().matches(Regex("^[\\w.-]+@[\\w.-]+\\.\\w+$"))
+
+    fun cerrarSesion() {
+        correo = ""
+        contrasena = ""
+        errorCorreo = ""
+        errorContrasena = ""
+        mensaje = ""
+        loginExitoso = false
+        nombreUsuario = ""
+    }
 
     fun validarLogin() {
         errorCorreo = when {
@@ -33,20 +44,33 @@ class LoginViewModel(
 
         errorContrasena = when {
             contrasena.isBlank() -> "Ingresa tu contraseña"
-            contrasena.length < 6 -> "La contraseña debe tener al menos 6 caracteres"
+            contrasena.length < 6 ->
+                "La contraseña debe tener al menos 6 caracteres"
             else -> ""
         }
 
         mensaje = ""
         loginExitoso = false
+        nombreUsuario = ""
 
-        if (errorCorreo.isNotEmpty() || errorContrasena.isNotEmpty()) return
+        if (errorCorreo.isNotEmpty() || errorContrasena.isNotEmpty()) {
+            return
+        }
 
         cargando = true
 
         viewModelScope.launch {
             try {
-                loginExitoso = repository.validarCredenciales(correo, contrasena)
+                val usuario = repository.obtenerUsuarioValidado(
+                    correo = correo,
+                    contrasena = contrasena
+                )
+
+                loginExitoso = usuario != null
+                nombreUsuario = usuario?.let {
+                    "${it.nombre} ${it.apellido}".trim()
+                }.orEmpty()
+
                 mensaje = if (loginExitoso) {
                     "Inicio de sesión exitoso."
                 } else {
@@ -54,6 +78,7 @@ class LoginViewModel(
                 }
             } catch (error: Exception) {
                 loginExitoso = false
+                nombreUsuario = ""
                 mensaje = "No se pudo validar la cuenta."
             } finally {
                 cargando = false

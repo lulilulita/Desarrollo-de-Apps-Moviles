@@ -29,7 +29,17 @@ class IncidenciaViewModel(
     var errorGuardado by mutableStateOf("")
     var mostrarConfirmacion by mutableStateOf(false)
 
-    fun validarIncidencia() {
+    var eliminacionExitosa by mutableStateOf(false)
+    var errorEliminacion by mutableStateOf("")
+    var correoUsuarioActual by mutableStateOf("")
+
+    init {
+        viewModelScope.launch {
+            repository.agregarIncidenciasDeReferenciaSiFaltan()
+        }
+    }
+
+    fun validarIncidencia(fotoEvidencia: ByteArray? = null){
         errorCategoria = if (categoria !in categorias) "Selecciona una categoría" else ""
         errorDescripcion = when {
             descripcion.isBlank() -> "Describe la incidencia"
@@ -56,7 +66,9 @@ class IncidenciaViewModel(
                         categoria = categoria,
                         descripcion = descripcion.trim(),
                         prioridad = prioridad,
-                        sector = sector
+                        sector = sector,
+                        fotoEvidencia = fotoEvidencia,
+                        correoUsuario = correoUsuarioActual.trim().lowercase()
                     )
                     repository.guardar(incidencia)
                     mostrarConfirmacion = true
@@ -78,4 +90,23 @@ class IncidenciaViewModel(
         errorSector = ""
         mostrarConfirmacion = false
     }
+    fun eliminarIncidencia(incidencia: IncidenciaEntity) {
+        eliminacionExitosa = false
+        errorEliminacion = ""
+
+        viewModelScope.launch {
+            try {
+                repository.eliminar(incidencia)
+                eliminacionExitosa = true
+            } catch (error: Exception) {
+                errorEliminacion = "No se pudo eliminar la incidencia."
+            }
+        }
+    }
+    fun limpiarEstadoEliminacion() {
+        eliminacionExitosa = false
+        errorEliminacion = ""
+    }
+
+
 }

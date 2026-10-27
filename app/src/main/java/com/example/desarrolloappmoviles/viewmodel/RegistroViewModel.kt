@@ -12,20 +12,27 @@ class RegistroViewModel(
     private val repository: UsuarioRepository
 ) : ViewModel() {
 
+    var nombre by mutableStateOf("")
+    var apellido by mutableStateOf("")
     var correo by mutableStateOf("")
     var contrasena by mutableStateOf("")
     var confirmarContrasena by mutableStateOf("")
 
+    var errorNombre by mutableStateOf("")
+    var errorApellido by mutableStateOf("")
     var errorCorreo by mutableStateOf("")
     var errorContrasena by mutableStateOf("")
     var errorConfirmacion by mutableStateOf("")
     var mensaje by mutableStateOf("")
     var registroExitoso by mutableStateOf(false)
 
-    fun validacionCorreo(): Boolean =
+    private fun validacionCorreo(): Boolean =
         correo.trim().matches(Regex("^[\\w.-]+@[\\w.-]+\\.\\w+$"))
 
     fun validarRegistro() {
+        errorNombre = if (nombre.isBlank()) "Ingresa tu nombre" else ""
+        errorApellido = if (apellido.isBlank()) "Ingresa tu apellido" else ""
+
         errorCorreo = when {
             correo.isBlank() -> "Ingresa tu correo"
             !validacionCorreo() -> "Ingresa un correo válido"
@@ -34,13 +41,15 @@ class RegistroViewModel(
 
         errorContrasena = when {
             contrasena.isBlank() -> "Ingresa tu contraseña"
-            contrasena.length < 6 -> "La contraseña debe tener al menos 6 caracteres"
+            contrasena.length < 6 ->
+                "La contraseña debe tener al menos 6 caracteres"
             else -> ""
         }
 
         errorConfirmacion = when {
             confirmarContrasena.isBlank() -> "Confirma tu contraseña"
-            confirmarContrasena != contrasena -> "Las contraseñas no coinciden"
+            confirmarContrasena != contrasena ->
+                "Las contraseñas no coinciden"
             else -> ""
         }
 
@@ -48,21 +57,28 @@ class RegistroViewModel(
         registroExitoso = false
 
         if (
+            errorNombre.isEmpty() &&
+            errorApellido.isEmpty() &&
             errorCorreo.isEmpty() &&
             errorContrasena.isEmpty() &&
             errorConfirmacion.isEmpty()
         ) {
             viewModelScope.launch {
                 try {
-                    val registrado = repository.registrar(correo, contrasena)
+                    registroExitoso = repository.registrar(
+                        nombre = nombre,
+                        apellido = apellido,
+                        correo = correo,
+                        contrasena = contrasena
+                    )
 
-                    if (registrado) {
-                        registroExitoso = true
-                        mensaje = "Cuenta creada correctamente. Ahora puedes iniciar sesión."
+                    mensaje = if (registroExitoso) {
+                        "Cuenta creada correctamente. Ahora puedes iniciar sesión."
                     } else {
-                        mensaje = "Ya existe una cuenta con este correo. Inicia sesión."
+                        "Ya existe una cuenta con este correo. Inicia sesión."
                     }
                 } catch (error: Exception) {
+                    registroExitoso = false
                     mensaje = "No se pudo crear la cuenta."
                 }
             }

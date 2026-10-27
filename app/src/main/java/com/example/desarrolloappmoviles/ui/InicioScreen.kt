@@ -15,13 +15,24 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 
 @Composable
 fun InicioScreen(
+    nombreUsuario: String,
     abrirNuevaIncidencia: () -> Unit,
     verIncidencias: () -> Unit,
+    cerrarSesion: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var mostrarConfirmacionCerrarSesion by remember {
+        mutableStateOf(false)
+    }
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -31,6 +42,14 @@ fun InicioScreen(
         Text(
             text = "CuidApp",
             style = MaterialTheme.typography.headlineLarge
+        )
+        Text(
+            text = if (nombreUsuario.isBlank()) {
+                "Hola, vecina o vecino"
+            } else {
+                "Hola, $nombreUsuario"
+            },
+            style = MaterialTheme.typography.headlineSmall
         )
 
         Text(
@@ -64,5 +83,43 @@ fun InicioScreen(
         ) {
             Text("Mis incidencias")
         }
+        OutlinedButton(
+            onClick = { mostrarConfirmacionCerrarSesion = true },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Cerrar sesión")
+        }
+    }
+    if (mostrarConfirmacionCerrarSesion) {
+        AlertDialog(
+            onDismissRequest = {
+                mostrarConfirmacionCerrarSesion = false
+            },
+            title = {
+                Text("Cerrar sesión")
+            },
+            text = {
+                Text("¿Estás segura de que quieres cerrar sesión?")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        mostrarConfirmacionCerrarSesion = false
+                        cerrarSesion()
+                    }
+                ) {
+                    Text("Sí, cerrar sesión")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        mostrarConfirmacionCerrarSesion = false
+                    }
+                ) {
+                    Text("Cancelar")
+                }
+            }
+        )
     }
 }

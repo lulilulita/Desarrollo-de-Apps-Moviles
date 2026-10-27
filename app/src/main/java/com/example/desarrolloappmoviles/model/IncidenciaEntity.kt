@@ -15,5 +15,8 @@ data class IncidenciaEntity(
     val responsable: String = "Sin asignar",
     val fechaRegistro: Long = System.currentTimeMillis(),
     val latitud: Double? = null,
-    val longitud: Double? = null
+    val longitud: Double? = null,
+    val fotoEvidencia: ByteArray? = null,
+    val correoUsuario: String? = null
 )
+

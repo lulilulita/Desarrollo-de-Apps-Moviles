@@ -8,7 +8,7 @@ import androidx.room.RoomDatabase
         IncidenciaEntity::class,
         UsuarioEntity::class
     ],
-    version = 2,
+    version = 5,
     exportSchema = false
 )
 abstract class CuidAppDatabase : RoomDatabase() {
