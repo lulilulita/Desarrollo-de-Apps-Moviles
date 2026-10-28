@@ -1,5 +1,6 @@
 package com.example.desarrolloappmoviles.ui
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -17,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -97,6 +99,7 @@ fun RegistroScreen(
         )
 
         OutlinedTextField(
+            enabled = !viewModel.cargando,
             value = viewModel.nombre,
             onValueChange = {
                 viewModel.nombre = it
@@ -119,6 +122,7 @@ fun RegistroScreen(
         )
 
         OutlinedTextField(
+            enabled = !viewModel.cargando,
             value = viewModel.apellido,
             onValueChange = {
                 viewModel.apellido = it
@@ -141,6 +145,7 @@ fun RegistroScreen(
         )
 
         OutlinedTextField(
+            enabled = !viewModel.cargando,
             value = viewModel.correo,
             onValueChange = {
                 viewModel.correo = it
@@ -167,6 +172,7 @@ fun RegistroScreen(
         )
 
         OutlinedTextField(
+            enabled = !viewModel.cargando,
             value = viewModel.contrasena,
             onValueChange = {
                 viewModel.contrasena = it
@@ -194,6 +200,7 @@ fun RegistroScreen(
         )
 
         OutlinedTextField(
+            enabled = !viewModel.cargando,
             value = viewModel.confirmarContrasena,
             onValueChange = {
                 viewModel.confirmarContrasena = it
@@ -223,18 +230,21 @@ fun RegistroScreen(
             onClick = {
                 viewModel.validarRegistro()
             },
+            enabled = !viewModel.cargando,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
             shape = RoundedCornerShape(16.dp)
         ) {
-            Text(
+            if (viewModel.cargando) {
+                CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+            } else Text(
                 text = "Crear cuenta",
                 style = MaterialTheme.typography.titleMedium
             )
         }
 
-        if (viewModel.mensaje.isNotEmpty()) {
+        AnimatedVisibility(visible = viewModel.mensaje.isNotEmpty()) {
             Text(
                 text = viewModel.mensaje,
                 color = if (viewModel.registroExitoso) {
@@ -247,6 +257,7 @@ fun RegistroScreen(
 
         TextButton(
             onClick = volverLogin,
+            enabled = !viewModel.cargando,
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("¿Ya tienes cuenta? Inicia sesión")

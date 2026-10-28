@@ -44,7 +44,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 fun LoginScreen(
     viewModel: LoginViewModel,
     abrirRegistro: () -> Unit,
-    abrirIncidencia: () -> Unit,
+    abrirInicio: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -227,7 +227,7 @@ fun LoginScreen(
                         viewModel.mensaje = ""
 
                         if (accesoPermitido) {
-                            abrirIncidencia()
+                            abrirInicio()
                         }
                     }
                 ) {

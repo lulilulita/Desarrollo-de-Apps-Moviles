@@ -5,7 +5,6 @@ import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
-import androidx.room.Delete
 @Dao
 interface IncidenciaDao {
 
@@ -21,12 +20,4 @@ interface IncidenciaDao {
     @Update
     suspend fun actualizar(incidencia: IncidenciaEntity)
 
-    @Delete
-    suspend fun eliminar(incidencia: IncidenciaEntity)
-
-    @Query(
-        "SELECT COUNT(*) FROM incidencias " +
-                "WHERE responsable = 'Equipo municipal de referencia'"
-    )
-    suspend fun contarIncidenciasDeReferencia(): Int
 }

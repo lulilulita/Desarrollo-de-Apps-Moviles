@@ -15,7 +15,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
@@ -43,7 +42,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.desarrolloappmoviles.model.IncidenciaEntity
 import com.example.desarrolloappmoviles.viewmodel.IncidenciaViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -51,41 +49,43 @@ import java.util.Locale
 
 @Composable
 fun DetalleIncidenciaScreen(
-    incidencia: IncidenciaEntity,
+    incidenciaId: Long,
     viewModel: IncidenciaViewModel,
     volver: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val incidenciaObservada by viewModel
-        .observarIncidencia(incidencia.id)
-        .collectAsState(initial = incidencia)
-
-    val datosIncidencia = incidenciaObservada ?: incidencia
-
-    var mostrarConfirmacionEliminar by remember {
-        mutableStateOf(false)
+    val consulta = remember(incidenciaId) { viewModel.observarIncidencia(incidenciaId) }
+    val datosIncidencia by consulta.collectAsState(initial = null)
+    val incidencia = datosIncidencia
+    if (incidencia == null) {
+        Column(modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Text("Cargando incidencia…")
+            OutlinedButton(onClick = volver) { Text("Volver a incidencias") }
+        }
+        return
     }
+
     var mostrarConfirmacionCerrar by remember {
         mutableStateOf(false)
     }
 
     val foto = remember(
-        datosIncidencia.id,
-        datosIncidencia.fotoEvidencia
+        incidencia.id,
+        incidencia.fotoEvidencia
     ) {
-        datosIncidencia.fotoEvidencia?.let { bytes ->
+        incidencia.fotoEvidencia?.let { bytes ->
             BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
         }
     }
 
-    val fecha = remember(datosIncidencia.fechaRegistro) {
+    val fecha = remember(incidencia.fechaRegistro) {
         SimpleDateFormat(
             "dd/MM/yyyy HH:mm",
             Locale.getDefault()
-        ).format(Date(datosIncidencia.fechaRegistro))
+        ).format(Date(incidencia.fechaRegistro))
     }
 
-    val estadoNormalizado = datosIncidencia.estado.trim().lowercase()
+    val estadoNormalizado = incidencia.estado.trim().lowercase()
 
     val colorEstado = when (estadoNormalizado) {
         "cerrada" -> MaterialTheme.colorScheme.tertiaryContainer
@@ -124,7 +124,7 @@ fun DetalleIncidenciaScreen(
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Text(
-                    text = datosIncidencia.categoria,
+                    text = incidencia.categoria,
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold
                 )
@@ -134,7 +134,7 @@ fun DetalleIncidenciaScreen(
                     shape = RoundedCornerShape(50)
                 ) {
                     Text(
-                        text = "Estado: ${datosIncidencia.estado}",
+                        text = "Estado: ${incidencia.estado}",
                         color = colorTextoEstado,
                         style = MaterialTheme.typography.labelLarge,
                         modifier = Modifier.padding(
@@ -145,7 +145,7 @@ fun DetalleIncidenciaScreen(
                 }
 
                 Text(
-                    text = datosIncidencia.descripcion,
+                    text = incidencia.descripcion,
                     style = MaterialTheme.typography.bodyLarge
                 )
             }
@@ -188,17 +188,17 @@ fun DetalleIncidenciaScreen(
                 DatoIncidencia(
                     icono = Icons.Filled.LocationOn,
                     etiqueta = "Sector",
-                    valor = datosIncidencia.sector
+                    valor = incidencia.sector
                 )
                 DatoIncidencia(
                     icono = Icons.Filled.Info,
                     etiqueta = "Prioridad",
-                    valor = datosIncidencia.prioridad
+                    valor = incidencia.prioridad
                 )
                 DatoIncidencia(
                     icono = Icons.Filled.Person,
                     etiqueta = "Responsable",
-                    valor = datosIncidencia.responsable
+                    valor = incidencia.responsable
                 )
                 Text(
                     text = "Fecha de registro: $fecha",
@@ -221,7 +221,7 @@ fun DetalleIncidenciaScreen(
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = datosIncidencia.historialAcciones
+                    text = incidencia.historialAcciones
                         ?.takeIf { it.isNotBlank() }
                         ?: "Aún no hay acciones registradas."
                 )
@@ -240,7 +240,7 @@ fun DetalleIncidenciaScreen(
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Text(
-                    text = "Gestión municipal",
+                    text = "Gestión municipal simulada",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
@@ -248,13 +248,13 @@ fun DetalleIncidenciaScreen(
                 Button(
                     onClick = {
                         viewModel.registrarAccionGestion(
-                            incidencia = datosIncidencia,
+                            incidencia = incidencia,
                             accion = "Incidencia asignada a Inspector municipal de prueba",
                             nuevoEstado = "En revisión",
                             nuevoResponsable = "Inspector municipal de prueba"
                         )
                     },
-                    enabled = datosIncidencia.estado != "Cerrada",
+                    enabled = incidencia.estado != "Cerrada" && !viewModel.gestionando,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(14.dp)
                 ) {
@@ -270,7 +270,7 @@ fun DetalleIncidenciaScreen(
                     onClick = {
                         mostrarConfirmacionCerrar = true
                     },
-                    enabled = datosIncidencia.estado != "Cerrada",
+                    enabled = incidencia.estado != "Cerrada" && !viewModel.gestionando,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(14.dp)
                 ) {
@@ -291,13 +291,6 @@ fun DetalleIncidenciaScreen(
             }
         }
 
-        if (viewModel.errorEliminacion.isNotEmpty()) {
-            Text(
-                text = viewModel.errorEliminacion,
-                color = MaterialTheme.colorScheme.error
-            )
-        }
-
         OutlinedButton(
             onClick = volver,
             modifier = Modifier.fillMaxWidth(),
@@ -306,19 +299,6 @@ fun DetalleIncidenciaScreen(
             Text("Volver a incidencias")
         }
 
-        TextButton(
-            onClick = {
-                mostrarConfirmacionEliminar = true
-            },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Icon(
-                imageVector = Icons.Filled.Delete,
-                contentDescription = null,
-                modifier = Modifier.padding(end = 8.dp)
-            )
-            Text("Eliminar incidencia")
-        }
     }
 
     if (mostrarConfirmacionCerrar) {
@@ -339,7 +319,7 @@ fun DetalleIncidenciaScreen(
                     onClick = {
                         mostrarConfirmacionCerrar = false
                         viewModel.registrarAccionGestion(
-                            incidencia = datosIncidencia,
+                            incidencia = incidencia,
                             accion = "Caso cerrado",
                             nuevoEstado = "Cerrada"
                         )
@@ -360,63 +340,6 @@ fun DetalleIncidenciaScreen(
         )
     }
 
-    if (mostrarConfirmacionEliminar) {
-        AlertDialog(
-            onDismissRequest = {
-                mostrarConfirmacionEliminar = false
-            },
-            title = {
-                Text("Eliminar incidencia")
-            },
-            text = {
-                Text("¿Estás segura de que quieres eliminar esta incidencia?")
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        mostrarConfirmacionEliminar = false
-                        viewModel.eliminarIncidencia(datosIncidencia)
-                    }
-                ) {
-                    Text("Sí, eliminar")
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = {
-                        mostrarConfirmacionEliminar = false
-                    }
-                ) {
-                    Text("Cancelar")
-                }
-            }
-        )
-    }
-
-    if (viewModel.eliminacionExitosa) {
-        AlertDialog(
-            onDismissRequest = {
-                viewModel.limpiarEstadoEliminacion()
-                volver()
-            },
-            title = {
-                Text("Incidencia eliminada")
-            },
-            text = {
-                Text("El registro se eliminó correctamente.")
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        viewModel.limpiarEstadoEliminacion()
-                        volver()
-                    }
-                ) {
-                    Text("Aceptar")
-                }
-            }
-        )
-    }
 }
 
 @Composable

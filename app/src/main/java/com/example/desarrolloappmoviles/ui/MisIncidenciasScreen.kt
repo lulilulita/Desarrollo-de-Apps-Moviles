@@ -33,6 +33,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -54,7 +55,7 @@ fun MisIncidenciasScreen(
     abrirDetalle: (IncidenciaEntity) -> Unit = {}
 ) {
     val incidencias by viewModel.incidencias.collectAsState(initial = emptyList())
-    var pestanaSeleccionada by remember { mutableIntStateOf(0) }
+    var pestanaSeleccionada by rememberSaveable { mutableIntStateOf(0) }
     val correoUsuario = viewModel.correoUsuarioActual
         .trim()
         .lowercase()
@@ -108,7 +109,7 @@ fun MisIncidenciasScreen(
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold
                     )
-                    Text("Consulta tus reportes y los de otros sectores.")
+                    Text("Consulta tus reportes y los de otros usuarios ficticios.")
                 }
             }
         }
@@ -125,7 +126,7 @@ fun MisIncidenciasScreen(
                 selected = pestanaSeleccionada == 1,
                 onClick = { pestanaSeleccionada = 1 },
                 text = {
-                    Text("Otros sectores (${incidenciasOtrosSectores.size})")
+                    Text("Comunidad (${incidenciasOtrosSectores.size})")
                 }
             )
         }
@@ -155,7 +156,7 @@ fun MisIncidenciasScreen(
                         text = if (pestanaSeleccionada == 0) {
                             "Aún no has registrado incidencias."
                         } else {
-                            "Aún no hay incidencias en otros sectores."
+                            "Aún no hay reportes de otros usuarios ficticios."
                         }
                     )
                 }

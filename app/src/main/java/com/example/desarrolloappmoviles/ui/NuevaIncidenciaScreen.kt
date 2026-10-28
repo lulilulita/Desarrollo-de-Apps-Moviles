@@ -1,11 +1,13 @@
 package com.example.desarrolloappmoviles.ui
 
+import android.content.Context
 import android.Manifest
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -28,6 +30,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -41,6 +44,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -59,34 +64,29 @@ import java.io.File
 @Composable
 fun NuevaIncidenciaScreen(
     viewModel: IncidenciaViewModel,
-    volverLogin: () -> Unit,
+    volverInicio: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
 
-    var imageUri by remember { mutableStateOf<Uri?>(null) }
-    var fotoSeleccionada by remember { mutableStateOf<Bitmap?>(null) }
+    var uriPendiente by rememberSaveable { mutableStateOf<String?>(null) }
+    val fotoSeleccionada = remember(viewModel.fotoEvidencia) {
+        viewModel.fotoEvidencia?.let { BitmapFactory.decodeByteArray(it, 0, it.size) }
+    }
     var errorCamara by remember { mutableStateOf("") }
 
     val takePictureLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.TakePicture()
     ) { exito ->
-        val uri = imageUri
+        val uri = uriPendiente?.let(Uri::parse)
 
         if (exito && uri != null) {
             try {
-                fotoSeleccionada =
-                    context.contentResolver.openInputStream(uri)?.use { stream ->
-                        BitmapFactory.decodeStream(stream)
-                    }
+                viewModel.fotoEvidencia = cargarFotoReducida(context, uri)
+                errorCamara = if (viewModel.fotoEvidencia == null) "No se pudo cargar la foto." else ""
 
-                errorCamara = if (fotoSeleccionada == null) {
-                    "No se pudo cargar la foto."
-                } else {
-                    ""
-                }
             } catch (error: Exception) {
-                fotoSeleccionada = null
+                viewModel.fotoEvidencia = null
                 errorCamara = "No se pudo cargar la foto."
             }
         }
@@ -109,7 +109,7 @@ fun NuevaIncidenciaScreen(
                     archivoFoto
                 )
 
-                imageUri = uriFoto
+                uriPendiente = uriFoto.toString()
                 takePictureLauncher.launch(uriFoto)
             } catch (error: Exception) {
                 errorCamara = "No se pudo abrir la cámara."
@@ -198,6 +198,7 @@ fun NuevaIncidenciaScreen(
         )
 
         SelectorIncidencia(
+            habilitado = !viewModel.guardando,
             titulo = "Categoría",
             valor = viewModel.categoria,
             opciones = viewModel.categorias,
@@ -209,12 +210,14 @@ fun NuevaIncidenciaScreen(
         )
 
         OutlinedTextField(
+            enabled = !viewModel.guardando,
             value = viewModel.descripcion,
             onValueChange = {
                 viewModel.descripcion = it
                 viewModel.errorDescripcion = ""
             },
             label = { Text("Descripción") },
+            leadingIcon = { Icon(Icons.Filled.Info, contentDescription = null) },
             placeholder = {
                 Text("Ejemplo: luminaria apagada en el sector ficticio A.")
             },
@@ -233,6 +236,7 @@ fun NuevaIncidenciaScreen(
         )
 
         SelectorIncidencia(
+            habilitado = !viewModel.guardando,
             titulo = "Prioridad",
             valor = viewModel.prioridad,
             opciones = viewModel.prioridades,
@@ -244,6 +248,7 @@ fun NuevaIncidenciaScreen(
         )
 
         SelectorIncidencia(
+            habilitado = !viewModel.guardando,
             titulo = "Sector ficticio",
             valor = viewModel.sector,
             opciones = viewModel.sectores,
@@ -289,7 +294,8 @@ fun NuevaIncidenciaScreen(
                         cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(14.dp)
+                    shape = RoundedCornerShape(14.dp),
+                    enabled = !viewModel.guardando
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Add,
@@ -328,27 +334,23 @@ fun NuevaIncidenciaScreen(
 
         Button(
             onClick = {
-                val fotoBytes = fotoSeleccionada?.let { imagen ->
-                    ByteArrayOutputStream().use { salida ->
-                        imagen.compress(Bitmap.CompressFormat.JPEG, 70, salida)
-                        salida.toByteArray()
-                    }
-                }
-
-                viewModel.validarIncidencia(fotoBytes)
+                viewModel.validarIncidencia()
             },
+            enabled = !viewModel.guardando,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
             shape = RoundedCornerShape(16.dp)
         ) {
-            Text(
+            if (viewModel.guardando) {
+                CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+            } else Text(
                 text = "Guardar incidencia",
                 style = MaterialTheme.typography.titleMedium
             )
         }
 
-        if (viewModel.errorGuardado.isNotEmpty()) {
+        AnimatedVisibility(visible = viewModel.errorGuardado.isNotEmpty()) {
             Text(
                 text = viewModel.errorGuardado,
                 color = MaterialTheme.colorScheme.error
@@ -356,7 +358,8 @@ fun NuevaIncidenciaScreen(
         }
 
         TextButton(
-            onClick = volverLogin,
+            onClick = volverInicio,
+            enabled = !viewModel.guardando,
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Volver al inicio")
@@ -366,7 +369,8 @@ fun NuevaIncidenciaScreen(
     if (viewModel.mostrarConfirmacion) {
         AlertDialog(
             onDismissRequest = {
-                viewModel.mostrarConfirmacion = false
+                viewModel.limpiarFormulario()
+                uriPendiente = null
             },
             title = {
                 Text("Incidencia registrada")
@@ -383,24 +387,14 @@ fun NuevaIncidenciaScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        viewModel.mostrarConfirmacion = false
+                        viewModel.limpiarFormulario()
+                        uriPendiente = null
                     }
                 ) {
                     Text("Aceptar")
                 }
             },
-            dismissButton = {
-                TextButton(
-                    onClick = {
-                        viewModel.limpiarFormulario()
-                        fotoSeleccionada = null
-                        imageUri = null
-                        errorCamara = ""
-                    }
-                ) {
-                    Text("Nueva incidencia")
-                }
-            }
+
         )
     }
 }
@@ -408,6 +402,7 @@ fun NuevaIncidenciaScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SelectorIncidencia(
+    habilitado: Boolean,
     titulo: String,
     valor: String,
     opciones: List<String>,
@@ -418,13 +413,20 @@ private fun SelectorIncidencia(
 
     ExposedDropdownMenuBox(
         expanded = expandido,
-        onExpandedChange = { expandido = it }
+        onExpandedChange = { if (habilitado) expandido = it }
     ) {
         OutlinedTextField(
+            enabled = habilitado,
             value = valor,
             onValueChange = {},
             readOnly = true,
             label = { Text(titulo) },
+            leadingIcon = {
+                Icon(
+                    imageVector = if (titulo == "Sector ficticio") Icons.Filled.LocationOn else Icons.Filled.Info,
+                    contentDescription = null
+                )
+            },
             placeholder = { Text("Selecciona una opción") },
             isError = error.isNotEmpty(),
             supportingText = {
@@ -438,7 +440,7 @@ private fun SelectorIncidencia(
             shape = RoundedCornerShape(14.dp),
             modifier = Modifier
                 .fillMaxWidth()
-                .menuAnchor()
+                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
         )
 
         ExposedDropdownMenu(
@@ -455,5 +457,21 @@ private fun SelectorIncidencia(
                 )
             }
         }
+    }
+}
+// Reducir antes de guardar evita fotos enormes en memoria y en las consultas de Room.
+private fun cargarFotoReducida(context: Context, uri: Uri): ByteArray? {
+    val medidas = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    context.contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, medidas) }
+    var muestra = 1
+    while (medidas.outWidth / muestra > 800 || medidas.outHeight / muestra > 800) muestra *= 2
+    val opciones = BitmapFactory.Options().apply { inSampleSize = muestra }
+    val imagen = context.contentResolver.openInputStream(uri)?.use {
+        BitmapFactory.decodeStream(it, null, opciones)
+    } ?: return null
+    return ByteArrayOutputStream().use { salida ->
+        imagen.compress(Bitmap.CompressFormat.JPEG, 70, salida)
+        imagen.recycle()
+        salida.toByteArray()
     }
 }

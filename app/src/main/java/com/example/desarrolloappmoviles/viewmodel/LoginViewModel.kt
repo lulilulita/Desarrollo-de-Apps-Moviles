@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.desarrolloappmoviles.repository.UsuarioRepository
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.CancellationException
 
 class LoginViewModel(
     private val repository: UsuarioRepository
@@ -36,6 +37,7 @@ class LoginViewModel(
     }
 
     fun validarLogin() {
+        if (cargando) return
         errorCorreo = when {
             correo.isBlank() -> "Ingresa tu correo"
             !validacionCorreo() -> "Ingresa un correo válido"
@@ -57,13 +59,15 @@ class LoginViewModel(
             return
         }
 
+        val correoActual = correo
+        val contrasenaActual = contrasena
         cargando = true
 
         viewModelScope.launch {
             try {
                 val usuario = repository.obtenerUsuarioValidado(
-                    correo = correo,
-                    contrasena = contrasena
+                    correo = correoActual,
+                    contrasena = contrasenaActual
                 )
 
                 loginExitoso = usuario != null
@@ -76,7 +80,9 @@ class LoginViewModel(
                 } else {
                     "Correo o contraseña incorrectos."
                 }
-            } catch (error: Exception) {
+            } catch (cancelacion: CancellationException) {
+                throw cancelacion
+            } catch (_: Exception) {
                 loginExitoso = false
                 nombreUsuario = ""
                 mensaje = "No se pudo validar la cuenta."

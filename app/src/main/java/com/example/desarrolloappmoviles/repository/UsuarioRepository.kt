@@ -30,12 +30,6 @@ class UsuarioRepository(private val dao: UsuarioDao) {
         }
     }
 
-    suspend fun validarCredenciales(
-        correo: String,
-        contrasena: String
-    ): Boolean =
-        obtenerUsuarioValidado(correo, contrasena) != null
-
     private fun normalizarCorreo(correo: String): String =
         correo.trim().lowercase()
 

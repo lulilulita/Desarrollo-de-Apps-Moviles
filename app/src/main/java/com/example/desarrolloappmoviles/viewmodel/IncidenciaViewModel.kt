@@ -8,6 +8,7 @@ import com.example.desarrolloappmoviles.repository.IncidenciaRepository
 import androidx.lifecycle.viewModelScope
 import com.example.desarrolloappmoviles.model.IncidenciaEntity
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.CancellationException
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -36,17 +37,15 @@ class IncidenciaViewModel(
     var errorGestion by mutableStateOf("")
     var mostrarConfirmacion by mutableStateOf(false)
 
-    var eliminacionExitosa by mutableStateOf(false)
-    var errorEliminacion by mutableStateOf("")
     var correoUsuarioActual by mutableStateOf("")
+    var fotoEvidencia by mutableStateOf<ByteArray?>(null)
+    var guardando by mutableStateOf(false)
+        private set
+    var gestionando by mutableStateOf(false)
+        private set
 
-    init {
-        viewModelScope.launch {
-            repository.agregarIncidenciasDeReferenciaSiFaltan()
-        }
-    }
-
-    fun validarIncidencia(fotoEvidencia: ByteArray? = null){
+    fun validarIncidencia(fotoEvidencia: ByteArray? = this.fotoEvidencia) {
+        if (guardando || mostrarConfirmacion) return
         errorCategoria = if (categoria !in categorias) "Selecciona una categoría" else ""
         errorDescripcion = when {
             descripcion.isBlank() -> "Describe la incidencia"
@@ -66,23 +65,27 @@ class IncidenciaViewModel(
         mostrarConfirmacion = false
         errorGuardado = ""
 
-        if (formularioValido) {
-            viewModelScope.launch {
-                try {
-                    val incidencia = IncidenciaEntity(
-                        categoria = categoria,
-                        descripcion = descripcion.trim(),
-                        prioridad = prioridad,
-                        sector = sector,
-                        fotoEvidencia = fotoEvidencia,
-                        correoUsuario = correoUsuarioActual.trim().lowercase()
-                    )
-
-                    repository.guardar(incidencia)
-                    mostrarConfirmacion = true
-                } catch (error: Exception) {
-                    errorGuardado = "No se pudo guardar la incidencia."
-                }
+        if (!formularioValido) return
+        val incidencia = IncidenciaEntity(
+            categoria = categoria,
+            descripcion = descripcion.trim(),
+            prioridad = prioridad,
+            sector = sector,
+            fotoEvidencia = fotoEvidencia,
+            correoUsuario = correoUsuarioActual.trim().lowercase(),
+            historialAcciones = "${fechaActual()} - Incidencia registrada"
+        )
+        guardando = true
+        viewModelScope.launch {
+            try {
+                repository.guardar(incidencia)
+                mostrarConfirmacion = true
+            } catch (cancelacion: CancellationException) {
+                throw cancelacion
+            } catch (_: Exception) {
+                errorGuardado = "No se pudo guardar la incidencia. Intenta nuevamente."
+            } finally {
+                guardando = false
             }
         }
     }
@@ -97,6 +100,9 @@ class IncidenciaViewModel(
         errorPrioridad = ""
         errorSector = ""
         mostrarConfirmacion = false
+        errorGuardado = ""
+        errorGestion = ""
+        fotoEvidencia = null
     }
 
     fun registrarAccionGestion(
@@ -105,16 +111,14 @@ class IncidenciaViewModel(
         nuevoEstado: String = incidencia.estado,
         nuevoResponsable: String = incidencia.responsable
     ) {
+        if (gestionando || incidencia.estado == "Cerrada") return
+        if (incidencia.estado == nuevoEstado && incidencia.responsable == nuevoResponsable) return
+        gestionando = true
         viewModelScope.launch {
             errorGestion = ""
 
             try {
-                val fecha = SimpleDateFormat(
-                    "dd/MM/yyyy HH:mm",
-                    Locale.getDefault()
-                ).format(Date())
-
-                val nuevaAccion = "$fecha - $accion"
+                val nuevaAccion = "${fechaActual()} - $accion"
                 val historialActual = incidencia.historialAcciones.orEmpty()
 
                 val historialActualizado = if (historialActual.isBlank()) {
@@ -130,28 +134,15 @@ class IncidenciaViewModel(
                         historialAcciones = historialActualizado
                     )
                 )
-            } catch (error: Exception) {
+            } catch (cancelacion: CancellationException) {
+                throw cancelacion
+            } catch (_: Exception) {
                 errorGestion = "No se pudo actualizar la incidencia."
+            } finally {
+                gestionando = false
             }
         }
     }
-    fun eliminarIncidencia(incidencia: IncidenciaEntity) {
-        eliminacionExitosa = false
-        errorEliminacion = ""
-
-        viewModelScope.launch {
-            try {
-                repository.eliminar(incidencia)
-                eliminacionExitosa = true
-            } catch (error: Exception) {
-                errorEliminacion = "No se pudo eliminar la incidencia."
-            }
-        }
-    }
-    fun limpiarEstadoEliminacion() {
-        eliminacionExitosa = false
-        errorEliminacion = ""
-    }
-
-
+    private fun fechaActual(): String =
+        SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(Date())
 }

@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.desarrolloappmoviles.repository.UsuarioRepository
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.CancellationException
 
 class RegistroViewModel(
     private val repository: UsuarioRepository
@@ -25,11 +26,14 @@ class RegistroViewModel(
     var errorConfirmacion by mutableStateOf("")
     var mensaje by mutableStateOf("")
     var registroExitoso by mutableStateOf(false)
+    var cargando by mutableStateOf(false)
+        private set
 
     private fun validacionCorreo(): Boolean =
         correo.trim().matches(Regex("^[\\w.-]+@[\\w.-]+\\.\\w+$"))
 
     fun validarRegistro() {
+        if (cargando) return
         errorNombre = if (nombre.isBlank()) "Ingresa tu nombre" else ""
         errorApellido = if (apellido.isBlank()) "Ingresa tu apellido" else ""
 
@@ -63,23 +67,36 @@ class RegistroViewModel(
             errorContrasena.isEmpty() &&
             errorConfirmacion.isEmpty()
         ) {
+            val nombreActual = nombre
+            val apellidoActual = apellido
+            val correoActual = correo
+            val contrasenaActual = contrasena
+            cargando = true
             viewModelScope.launch {
                 try {
                     registroExitoso = repository.registrar(
-                        nombre = nombre,
-                        apellido = apellido,
-                        correo = correo,
-                        contrasena = contrasena
+                        nombre = nombreActual,
+                        apellido = apellidoActual,
+                        correo = correoActual,
+                        contrasena = contrasenaActual
                     )
 
+                    if (registroExitoso) {
+                        contrasena = ""
+                        confirmarContrasena = ""
+                    }
                     mensaje = if (registroExitoso) {
                         "Cuenta creada correctamente. Ahora puedes iniciar sesión."
                     } else {
                         "Ya existe una cuenta con este correo. Inicia sesión."
                     }
-                } catch (error: Exception) {
+                } catch (cancelacion: CancellationException) {
+                    throw cancelacion
+                } catch (_: Exception) {
                     registroExitoso = false
                     mensaje = "No se pudo crear la cuenta."
+                } finally {
+                    cargando = false
                 }
             }
         }
