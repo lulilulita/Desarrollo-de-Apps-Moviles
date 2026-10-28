@@ -1,3 +1,5 @@
+> Documento histórico del primer avance. Para el estado actual consultar README y revision-2026-10-27.md.
+
 # Avance ajustado al material de clase
 
 Se retiraron la autenticación contra cuentas, SharedPreferences, hash, sal, rechazo de cuentas inexistentes o duplicadas y las pruebas de ese repositorio. Se restauraron los ViewModels sencillos y las reglas originales. Se conserva la carga simulada de dos segundos y se presenta una confirmación con AlertDialog, siguiendo los ejemplos Login y Animacion del profesor.
