@@ -33,10 +33,9 @@ class UsuarioRepository(private val dao: UsuarioDao) {
     private fun normalizarCorreo(correo: String): String =
         correo.trim().lowercase()
 
+    // Se conserva el hash existente para que las cuentas guardadas sigan funcionando.
     private fun hashContrasena(contrasena: String): String =
         MessageDigest.getInstance("SHA-256")
             .digest(contrasena.toByteArray(Charsets.UTF_8))
-            .joinToString("") { byte ->
-                (byte.toInt() and 0xff).toString(16).padStart(2, '0')
-            }
+            .joinToString("") { byte -> "%02x".format(byte) }
 }

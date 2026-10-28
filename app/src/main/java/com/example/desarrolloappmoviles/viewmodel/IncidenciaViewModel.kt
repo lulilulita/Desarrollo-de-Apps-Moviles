@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import com.example.desarrolloappmoviles.repository.IncidenciaRepository
 import androidx.lifecycle.viewModelScope
 import com.example.desarrolloappmoviles.model.IncidenciaEntity
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.CancellationException
 import java.text.SimpleDateFormat
@@ -20,8 +21,24 @@ class IncidenciaViewModel(
     val prioridades = listOf("Baja", "Media", "Alta")
     val sectores = listOf("Sector A", "Sector B", "Sector C")
 
-    val incidencias = repository.observarIncidencias()
-    fun observarIncidencia(id: Long) = repository.observarIncidencia(id)
+    // Como en CancionViewModel: leer la lista y recargar después de guardar o actualizar.
+    val incidencias = MutableStateFlow<List<IncidenciaEntity>>(emptyList())
+    var errorConsulta by mutableStateOf("")
+
+    init { cargarIncidencias() }
+
+    fun cargarIncidencias() {
+        viewModelScope.launch {
+            try {
+                incidencias.value = repository.obtenerIncidencias()
+                errorConsulta = ""
+            } catch (cancelacion: CancellationException) {
+                throw cancelacion
+            } catch (_: Exception) {
+                errorConsulta = "No se pudieron cargar las incidencias. Intenta nuevamente."
+            }
+        }
+    }
     var categoria by mutableStateOf("")
     var descripcion by mutableStateOf("")
     var prioridad by mutableStateOf("Media")
@@ -39,13 +56,16 @@ class IncidenciaViewModel(
 
     var correoUsuarioActual by mutableStateOf("")
     var fotoEvidencia by mutableStateOf<ByteArray?>(null)
+    var latitud by mutableStateOf<Double?>(null)
+    var longitud by mutableStateOf<Double?>(null)
+    var obteniendoUbicacion by mutableStateOf(false)
     var guardando by mutableStateOf(false)
         private set
     var gestionando by mutableStateOf(false)
         private set
 
-    fun validarIncidencia(fotoEvidencia: ByteArray? = this.fotoEvidencia) {
-        if (guardando || mostrarConfirmacion) return
+    fun validarIncidencia() {
+        if (guardando || mostrarConfirmacion || obteniendoUbicacion) return
         errorCategoria = if (categoria !in categorias) "Selecciona una categoría" else ""
         errorDescripcion = when {
             descripcion.isBlank() -> "Describe la incidencia"
@@ -72,6 +92,8 @@ class IncidenciaViewModel(
             prioridad = prioridad,
             sector = sector,
             fotoEvidencia = fotoEvidencia,
+            latitud = latitud,
+            longitud = longitud,
             correoUsuario = correoUsuarioActual.trim().lowercase(),
             historialAcciones = "${fechaActual()} - Incidencia registrada"
         )
@@ -79,6 +101,7 @@ class IncidenciaViewModel(
         viewModelScope.launch {
             try {
                 repository.guardar(incidencia)
+                cargarIncidencias()
                 mostrarConfirmacion = true
             } catch (cancelacion: CancellationException) {
                 throw cancelacion
@@ -103,13 +126,24 @@ class IncidenciaViewModel(
         errorGuardado = ""
         errorGestion = ""
         fotoEvidencia = null
+        latitud = null
+        longitud = null
     }
 
-    fun registrarAccionGestion(
+    fun asignarInspector(incidencia: IncidenciaEntity) {
+        registrarAccionGestion(incidencia, "Incidencia asignada a inspector de prueba",
+            "En revisión", "Inspector municipal de prueba")
+    }
+
+    fun cerrarIncidencia(incidencia: IncidenciaEntity) {
+        registrarAccionGestion(incidencia, "Caso cerrado", "Cerrada", incidencia.responsable)
+    }
+
+    private fun registrarAccionGestion(
         incidencia: IncidenciaEntity,
         accion: String,
-        nuevoEstado: String = incidencia.estado,
-        nuevoResponsable: String = incidencia.responsable
+        nuevoEstado: String,
+        nuevoResponsable: String
     ) {
         if (gestionando || incidencia.estado == "Cerrada") return
         if (incidencia.estado == nuevoEstado && incidencia.responsable == nuevoResponsable) return
@@ -134,6 +168,7 @@ class IncidenciaViewModel(
                         historialAcciones = historialActualizado
                     )
                 )
+                cargarIncidencias()
             } catch (cancelacion: CancellationException) {
                 throw cancelacion
             } catch (_: Exception) {

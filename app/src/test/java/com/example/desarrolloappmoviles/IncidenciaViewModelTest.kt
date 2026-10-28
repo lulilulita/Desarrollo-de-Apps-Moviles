@@ -7,7 +7,6 @@ import com.example.desarrolloappmoviles.repository.IncidenciaRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
@@ -106,13 +105,38 @@ class IncidenciaViewModelTest {
         val vm = formularioCompleto()
         vm.validarIncidencia()
         val guardada = dao.registros.value.single()
-        vm.registrarAccionGestion(guardada, "Caso cerrado", nuevoEstado = "Cerrada")
+        vm.cerrarIncidencia(guardada)
         val cerrada = dao.registros.value.single()
         assertEquals("Cerrada", cerrada.estado)
         assertTrue(cerrada.historialAcciones!!.contains("Incidencia registrada"))
         assertTrue(cerrada.historialAcciones.contains("Caso cerrado"))
-        vm.registrarAccionGestion(cerrada, "Reabrir", nuevoEstado = "En revisión")
+        vm.asignarInspector(cerrada)
         assertEquals(cerrada, dao.registros.value.single())
+    }
+
+    @Test fun guardaUbicacionYLimpiaElBorrador() {
+        val vm = formularioCompleto()
+        vm.latitud = -33.5
+        vm.longitud = -70.6
+        vm.validarIncidencia()
+        val guardada = dao.registros.value.single()
+        assertEquals(-33.5, guardada.latitud!!, 0.0001)
+        assertEquals(-70.6, guardada.longitud!!, 0.0001)
+        vm.limpiarFormulario()
+        assertNull(vm.latitud)
+        assertNull(vm.longitud)
+        assertEquals(-33.5, guardada.latitud!!, 0.0001)
+    }
+
+    @Test fun esperaLaLecturaDeUbicacionAntesDeGuardar() {
+        val vm = formularioCompleto()
+        vm.obteniendoUbicacion = true
+        vm.validarIncidencia()
+        assertTrue(dao.registros.value.isEmpty())
+        vm.obteniendoUbicacion = false
+        vm.validarIncidencia()
+        assertEquals(1, dao.registros.value.size)
+        assertNull(dao.registros.value.single().latitud)
     }
 
     private fun formularioCompleto() = nuevoViewModel().apply {
@@ -127,8 +151,7 @@ class IncidenciaViewModelTest {
 private class IncidenciaDaoDePrueba : IncidenciaDao {
     var fallar = false
     val registros = MutableStateFlow<List<IncidenciaEntity>>(emptyList())
-    override fun observarTodas() = registros
-    override fun observarPorId(id: Long) = registros.map { lista -> lista.find { it.id == id } }
+    override suspend fun obtenerTodas() = registros.value
     override suspend fun insertar(incidencia: IncidenciaEntity): Long {
         check(!fallar) { "Fallo de prueba" }
         val id = (registros.value.maxOfOrNull { it.id } ?: 0) + 1

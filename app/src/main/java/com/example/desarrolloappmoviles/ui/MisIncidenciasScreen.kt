@@ -54,7 +54,7 @@ fun MisIncidenciasScreen(
     modifier: Modifier = Modifier,
     abrirDetalle: (IncidenciaEntity) -> Unit = {}
 ) {
-    val incidencias by viewModel.incidencias.collectAsState(initial = emptyList())
+    val incidencias by viewModel.incidencias.collectAsState()
     var pestanaSeleccionada by rememberSaveable { mutableIntStateOf(0) }
     val correoUsuario = viewModel.correoUsuarioActual
         .trim()
@@ -112,6 +112,11 @@ fun MisIncidenciasScreen(
                     Text("Consulta tus reportes y los de otros usuarios ficticios.")
                 }
             }
+        }
+
+        if (viewModel.errorConsulta.isNotEmpty()) {
+            Text(viewModel.errorConsulta, color = MaterialTheme.colorScheme.error)
+            OutlinedButton(onClick = { viewModel.cargarIncidencias() }) { Text("Reintentar") }
         }
 
         PrimaryTabRow(selectedTabIndex = pestanaSeleccionada) {

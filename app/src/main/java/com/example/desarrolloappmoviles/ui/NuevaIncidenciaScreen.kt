@@ -259,6 +259,8 @@ fun NuevaIncidenciaScreen(
             }
         )
 
+        GPS(viewModel)
+
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(18.dp),
@@ -336,7 +338,7 @@ fun NuevaIncidenciaScreen(
             onClick = {
                 viewModel.validarIncidencia()
             },
-            enabled = !viewModel.guardando,
+            enabled = !viewModel.guardando && !viewModel.obteniendoUbicacion,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),

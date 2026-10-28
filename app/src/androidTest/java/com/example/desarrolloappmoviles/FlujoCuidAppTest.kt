@@ -3,6 +3,8 @@ package com.example.desarrolloappmoviles
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.espresso.Espresso.closeSoftKeyboard
+import androidx.test.platform.app.InstrumentationRegistry
+import android.Manifest
 import org.junit.Rule
 import org.junit.Test
 
@@ -11,6 +13,8 @@ class FlujoCuidAppTest {
 
     @Test fun registroLoginGuardadoDetalleYRotacion() {
         val correo = "prueba${System.currentTimeMillis()}@ejemplo.com"
+        // Activar solo al ejecutar con una ubicación simulada en el emulador.
+        val probarGps = InstrumentationRegistry.getArguments().getString("probarGps") == "true"
         tocar("¿No tienes cuenta? Regístrate", desplazar = true)
         escribir("Nombre", "Vecino")
         escribir("Apellido", "Ficticio")
@@ -38,6 +42,17 @@ class FlujoCuidAppTest {
         pantalla.onNodeWithText("Prueba ficticia de luminaria apagada.").assertExists()
         pantalla.onNodeWithText("Sector ficticio").performScrollTo().performClick()
         pantalla.onNodeWithText("Sector A").performClick()
+        if (probarGps) {
+            val permisos = InstrumentationRegistry.getInstrumentation().uiAutomation
+            permisos.grantRuntimePermission("com.example.desarrolloappmoviles", Manifest.permission.ACCESS_COARSE_LOCATION)
+            permisos.grantRuntimePermission("com.example.desarrolloappmoviles", Manifest.permission.ACCESS_FINE_LOCATION)
+            tocar("Obtener ubicación", desplazar = true)
+            pantalla.waitUntil(20_000) {
+                pantalla.onAllNodesWithText("Latitud:", substring = true).fetchSemanticsNodes().isNotEmpty()
+            }
+            pantalla.activityRule.scenario.recreate()
+            pantalla.onNodeWithText("Latitud:", substring = true).assertExists()
+        }
         tocar("Guardar incidencia", desplazar = true)
         esperar("Incidencia registrada")
         tocar("Aceptar")
@@ -49,6 +64,7 @@ class FlujoCuidAppTest {
         pantalla.activityRule.scenario.recreate()
         esperar("Detalle de incidencia")
         pantalla.onNodeWithText("Prueba ficticia de luminaria apagada.").assertExists()
+        if (probarGps) pantalla.onNodeWithText("Latitud:", substring = true).assertExists()
         tocar("Asignar inspector", desplazar = true)
         esperar("Estado: En revisión")
         tocar("Cerrar caso", desplazar = true)

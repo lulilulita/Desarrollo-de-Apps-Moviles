@@ -54,12 +54,11 @@ fun DetalleIncidenciaScreen(
     volver: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val consulta = remember(incidenciaId) { viewModel.observarIncidencia(incidenciaId) }
-    val datosIncidencia by consulta.collectAsState(initial = null)
-    val incidencia = datosIncidencia
+    val incidencias by viewModel.incidencias.collectAsState()
+    val incidencia = incidencias.find { it.id == incidenciaId }
     if (incidencia == null) {
         Column(modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Text("Cargando incidencia…")
+            Text(viewModel.errorConsulta.ifEmpty { "No se encontró la incidencia." })
             OutlinedButton(onClick = volver) { Text("Volver a incidencias") }
         }
         return
@@ -191,6 +190,13 @@ fun DetalleIncidenciaScreen(
                     valor = incidencia.sector
                 )
                 DatoIncidencia(
+                    icono = Icons.Filled.LocationOn,
+                    etiqueta = "Ubicación",
+                    valor = if (incidencia.latitud != null && incidencia.longitud != null)
+                        "Latitud: ${incidencia.latitud}\nLongitud: ${incidencia.longitud}"
+                    else "Sin ubicación adjunta"
+                )
+                DatoIncidencia(
                     icono = Icons.Filled.Info,
                     etiqueta = "Prioridad",
                     valor = incidencia.prioridad
@@ -247,12 +253,7 @@ fun DetalleIncidenciaScreen(
 
                 Button(
                     onClick = {
-                        viewModel.registrarAccionGestion(
-                            incidencia = incidencia,
-                            accion = "Incidencia asignada a Inspector municipal de prueba",
-                            nuevoEstado = "En revisión",
-                            nuevoResponsable = "Inspector municipal de prueba"
-                        )
+                        viewModel.asignarInspector(incidencia)
                     },
                     enabled = incidencia.estado != "Cerrada" && !viewModel.gestionando,
                     modifier = Modifier.fillMaxWidth(),
@@ -318,11 +319,7 @@ fun DetalleIncidenciaScreen(
                 TextButton(
                     onClick = {
                         mostrarConfirmacionCerrar = false
-                        viewModel.registrarAccionGestion(
-                            incidencia = incidencia,
-                            accion = "Caso cerrado",
-                            nuevoEstado = "Cerrada"
-                        )
+                        viewModel.cerrarIncidencia(incidencia)
                     }
                 ) {
                     Text("Sí, cerrar")
