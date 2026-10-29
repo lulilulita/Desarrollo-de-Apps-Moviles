@@ -12,6 +12,17 @@ class FlujoCuidAppTest {
     @get:Rule val pantalla = createAndroidComposeRule<MainActivity>()
 
     @Test fun registroLoginGuardadoDetalleYRotacion() {
+        // Una ejecución anterior puede haber dejado una sesión guardada.
+        pantalla.waitUntil(15_000) {
+            pantalla.onAllNodesWithText("Iniciar sesión").fetchSemanticsNodes().isNotEmpty() ||
+                pantalla.onAllNodesWithText("¿Qué necesitas hacer?").fetchSemanticsNodes().isNotEmpty()
+        }
+        if (pantalla.onAllNodesWithText("¿Qué necesitas hacer?").fetchSemanticsNodes().isNotEmpty()) {
+            tocar("Mi perfil", desplazar = true)
+            tocar("Cerrar sesión", desplazar = true)
+            tocar("Sí, cerrar sesión")
+            esperar("Iniciar sesión")
+        }
         val correo = "prueba${System.currentTimeMillis()}@ejemplo.com"
         // Activar solo al ejecutar con una ubicación simulada en el emulador.
         val probarGps = InstrumentationRegistry.getArguments().getString("probarGps") == "true"
@@ -86,6 +97,22 @@ class FlujoCuidAppTest {
         tocar("Mis incidencias y comunidad", desplazar = true)
         esperar("Iluminación")
         pantalla.onNodeWithText("Cerrada").assertExists()
+    }
+
+    @Test fun cierraLaSesionRecordada() {
+        pantalla.waitUntil(15_000) {
+            pantalla.onAllNodesWithText("Iniciar sesión").fetchSemanticsNodes().isNotEmpty() ||
+                pantalla.onAllNodesWithText("¿Qué necesitas hacer?").fetchSemanticsNodes().isNotEmpty()
+        }
+        if (pantalla.onAllNodesWithText("Iniciar sesión").fetchSemanticsNodes().isNotEmpty()) {
+            registroLoginGuardadoDetalleYRotacion()
+            tocar("Volver al inicio", desplazar = true)
+        }
+        esperar("¿Qué necesitas hacer?")
+        tocar("Mi perfil", desplazar = true)
+        tocar("Cerrar sesión", desplazar = true)
+        tocar("Sí, cerrar sesión")
+        esperar("Iniciar sesión")
     }
 
     private fun escribir(etiqueta: String, valor: String) {

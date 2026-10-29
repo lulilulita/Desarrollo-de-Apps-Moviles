@@ -1,7 +1,15 @@
 package com.example.desarrolloappmoviles.ui
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.Alignment
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavType
@@ -22,12 +30,28 @@ fun Navegacion(
     incidenciaViewModel: IncidenciaViewModel,
     modifier: Modifier = Modifier
 ) {
+    if (loginViewModel.restaurandoSesion) {
+        Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+        return
+    }
+    if (loginViewModel.errorSesion.isNotEmpty()) {
+        AlertDialog(
+            onDismissRequest = { loginViewModel.errorSesion = "" },
+            title = { Text("Sesión") },
+            text = { Text(loginViewModel.errorSesion) },
+            confirmButton = {
+                TextButton(onClick = { loginViewModel.errorSesion = "" }) { Text("Aceptar") }
+            }
+        )
+    }
+
+    // Se elige una sola vez, después de consultar la sesión guardada en Room.
+    val pantallaInicial = remember { if (loginViewModel.loginExitoso) "inicio" else "login" }
     val navController = rememberNavController()
     val entrada by navController.currentBackStackEntryAsState()
     val rutaActual = entrada?.destination?.route
 
-    fun cerrarSesion() {
-        loginViewModel.cerrarSesion()
+    fun volverAlLogin() {
         incidenciaViewModel.limpiarFormulario()
         incidenciaViewModel.correoUsuarioActual = ""
         navController.navigate("login") {
@@ -36,15 +60,15 @@ fun Navegacion(
         }
     }
 
-    // Si Android termina el proceso, se pide login de nuevo. Rotar conserva el ViewModel.
     LaunchedEffect(rutaActual, loginViewModel.loginExitoso) {
-        if (!loginViewModel.loginExitoso && rutaActual != null &&
-            rutaActual != "login" && rutaActual != "registro") {
-            cerrarSesion()
+        if (loginViewModel.loginExitoso) {
+            incidenciaViewModel.correoUsuarioActual = loginViewModel.correo.trim().lowercase()
+        } else if (rutaActual != null && rutaActual != "login" && rutaActual != "registro") {
+            volverAlLogin()
         }
     }
 
-    NavHost(navController = navController, startDestination = "login", modifier = modifier) {
+    NavHost(navController = navController, startDestination = pantallaInicial, modifier = modifier) {
         composable("login") {
             LoginScreen(
                 viewModel = loginViewModel,
@@ -68,8 +92,7 @@ fun Navegacion(
                 nombreUsuario = loginViewModel.nombreUsuario,
                 abrirNuevaIncidencia = { navController.navigate("nueva") },
                 verIncidencias = { navController.navigate("incidencias") },
-                abrirPerfil = { navController.navigate("perfil") },
-                cerrarSesion = { cerrarSesion() }
+                abrirPerfil = { navController.navigate("perfil") }
             )
         }
         composable("nueva") {
@@ -97,7 +120,7 @@ fun Navegacion(
             MiPerfilScreen(
                 nombreUsuario = loginViewModel.nombreUsuario,
                 volverInicio = { navController.popBackStack() },
-                cerrarSesion = { cerrarSesion() }
+                cerrarSesion = { loginViewModel.cerrarSesion() }
             )
         }
     }

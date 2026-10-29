@@ -20,5 +20,8 @@ data class UsuarioEntity(
     val apellido: String = "",
 
     val correo: String,
-    val contrasenaHash: String
+    val contrasenaHash: String,
+
+    @ColumnInfo(defaultValue = "0")
+    val sesionActiva: Boolean = false
 )

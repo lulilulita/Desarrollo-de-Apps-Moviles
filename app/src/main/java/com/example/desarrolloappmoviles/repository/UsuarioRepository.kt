@@ -30,6 +30,12 @@ class UsuarioRepository(private val dao: UsuarioDao) {
         }
     }
 
+    suspend fun guardarSesion(correo: String) = dao.guardarSesion(normalizarCorreo(correo))
+
+    suspend fun recuperarSesion(): UsuarioEntity? = dao.obtenerSesionActiva()
+
+    suspend fun cerrarSesion() = dao.cerrarSesiones()
+
     private fun normalizarCorreo(correo: String): String =
         correo.trim().lowercase()
 

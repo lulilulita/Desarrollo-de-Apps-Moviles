@@ -131,12 +131,21 @@ class IncidenciaViewModel(
     }
 
     fun asignarInspector(incidencia: IncidenciaEntity) {
-        registrarAccionGestion(incidencia, "Incidencia asignada a inspector de prueba",
-            "En revisión", "Inspector municipal de prueba")
+        registrarAccionGestion(
+            incidencia = incidencia,
+            accion = "Incidencia asignada a inspector de prueba",
+            nuevoEstado = "En revisión",
+            nuevoResponsable = "Inspector municipal de prueba"
+        )
     }
 
     fun cerrarIncidencia(incidencia: IncidenciaEntity) {
-        registrarAccionGestion(incidencia, "Caso cerrado", "Cerrada", incidencia.responsable)
+        registrarAccionGestion(
+            incidencia = incidencia,
+            accion = "Caso cerrado",
+            nuevoEstado = "Cerrada",
+            nuevoResponsable = incidencia.responsable
+        )
     }
 
     private fun registrarAccionGestion(

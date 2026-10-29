@@ -23,21 +23,58 @@ class LoginViewModel(
     var loginExitoso by mutableStateOf(false)
     var nombreUsuario by mutableStateOf("")
 
+    var restaurandoSesion by mutableStateOf(true)
+        private set
+    var errorSesion by mutableStateOf("")
+
+    init {
+        viewModelScope.launch {
+            try {
+                val usuario = repository.recuperarSesion()
+                if (usuario != null) {
+                    correo = usuario.correo
+                    nombreUsuario = "${usuario.nombre} ${usuario.apellido}".trim()
+                    loginExitoso = true
+                }
+            } catch (cancelacion: CancellationException) {
+                throw cancelacion
+            } catch (_: Exception) {
+                errorSesion = "No se pudo recuperar la sesión. Inicia sesión nuevamente."
+            } finally {
+                restaurandoSesion = false
+            }
+        }
+    }
+
     private fun validacionCorreo(): Boolean =
         correo.trim().matches(Regex("^[\\w.-]+@[\\w.-]+\\.\\w+$"))
 
     fun cerrarSesion() {
-        correo = ""
-        contrasena = ""
-        errorCorreo = ""
-        errorContrasena = ""
-        mensaje = ""
-        loginExitoso = false
-        nombreUsuario = ""
+        if (cargando) return
+        cargando = true
+        viewModelScope.launch {
+            try {
+                repository.cerrarSesion()
+                correo = ""
+                contrasena = ""
+                errorCorreo = ""
+                errorContrasena = ""
+                mensaje = ""
+                loginExitoso = false
+                nombreUsuario = ""
+                errorSesion = ""
+            } catch (cancelacion: CancellationException) {
+                throw cancelacion
+            } catch (_: Exception) {
+                errorSesion = "No se pudo cerrar la sesión. Intenta nuevamente."
+            } finally {
+                cargando = false
+            }
+        }
     }
 
     fun validarLogin() {
-        if (cargando) return
+        if (cargando || restaurandoSesion) return
         errorCorreo = when {
             correo.isBlank() -> "Ingresa tu correo"
             !validacionCorreo() -> "Ingresa un correo válido"
@@ -70,6 +107,7 @@ class LoginViewModel(
                     contrasena = contrasenaActual
                 )
 
+                if (usuario != null) repository.guardarSesion(usuario.correo)
                 loginExitoso = usuario != null
                 nombreUsuario = usuario?.let {
                     "${it.nombre} ${it.apellido}".trim()

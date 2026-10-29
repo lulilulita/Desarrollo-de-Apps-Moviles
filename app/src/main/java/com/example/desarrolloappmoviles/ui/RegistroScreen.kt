@@ -4,7 +4,6 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -12,7 +11,6 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
@@ -20,20 +18,14 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -55,48 +47,9 @@ fun RegistroScreen(
             .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(22.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer
-            )
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(18.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(14.dp)
-            ) {
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(5.dp)
-                ) {
-                    Text(
-                        text = "Crear cuenta",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text("Crea tu cuenta para registrar incidencias comunitarias.")
-                }
-
-                Image(
-                    painter = painterResource(id = R.drawable.muni_logo),
-                    contentDescription = "Logo municipal de referencia",
-                    modifier = Modifier
-                        .size(72.dp)
-                        .clip(RoundedCornerShape(14.dp)),
-                    contentScale = ContentScale.Fit
-                )
-            }
-        }
-
-        Text(
-            text = "Tus datos",
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold
-        )
+        Image(painterResource(R.drawable.muni_logo), "Logo municipal de referencia", Modifier.size(72.dp))
+        Text("Crear cuenta", style = MaterialTheme.typography.headlineSmall)
+        Text("Crea tu cuenta para registrar incidencias comunitarias.")
 
         OutlinedTextField(
             enabled = !viewModel.cargando,
@@ -111,13 +64,8 @@ fun RegistroScreen(
                 Icon(Icons.Filled.Person, contentDescription = "Nombre")
             },
             isError = viewModel.errorNombre.isNotEmpty(),
-            supportingText = {
-                if (viewModel.errorNombre.isNotEmpty()) {
-                    Text(viewModel.errorNombre)
-                }
-            },
+            supportingText = { Text(viewModel.errorNombre) },
             singleLine = true,
-            shape = RoundedCornerShape(14.dp),
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -134,13 +82,8 @@ fun RegistroScreen(
                 Icon(Icons.Filled.Person, contentDescription = "Apellido")
             },
             isError = viewModel.errorApellido.isNotEmpty(),
-            supportingText = {
-                if (viewModel.errorApellido.isNotEmpty()) {
-                    Text(viewModel.errorApellido)
-                }
-            },
+            supportingText = { Text(viewModel.errorApellido) },
             singleLine = true,
-            shape = RoundedCornerShape(14.dp),
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -161,13 +104,8 @@ fun RegistroScreen(
                 keyboardType = KeyboardType.Email
             ),
             isError = viewModel.errorCorreo.isNotEmpty(),
-            supportingText = {
-                if (viewModel.errorCorreo.isNotEmpty()) {
-                    Text(viewModel.errorCorreo)
-                }
-            },
+            supportingText = { Text(viewModel.errorCorreo) },
             singleLine = true,
-            shape = RoundedCornerShape(14.dp),
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -189,13 +127,8 @@ fun RegistroScreen(
             ),
             visualTransformation = PasswordVisualTransformation(),
             isError = viewModel.errorContrasena.isNotEmpty(),
-            supportingText = {
-                if (viewModel.errorContrasena.isNotEmpty()) {
-                    Text(viewModel.errorContrasena)
-                }
-            },
+            supportingText = { Text(viewModel.errorContrasena) },
             singleLine = true,
-            shape = RoundedCornerShape(14.dp),
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -216,25 +149,17 @@ fun RegistroScreen(
             ),
             visualTransformation = PasswordVisualTransformation(),
             isError = viewModel.errorConfirmacion.isNotEmpty(),
-            supportingText = {
-                if (viewModel.errorConfirmacion.isNotEmpty()) {
-                    Text(viewModel.errorConfirmacion)
-                }
-            },
+            supportingText = { Text(viewModel.errorConfirmacion) },
             singleLine = true,
-            shape = RoundedCornerShape(14.dp),
             modifier = Modifier.fillMaxWidth()
         )
 
         Button(
-            onClick = {
-                viewModel.validarRegistro()
-            },
+            onClick = { viewModel.validarRegistro() },
             enabled = !viewModel.cargando,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(56.dp),
-            shape = RoundedCornerShape(16.dp)
+                .height(56.dp)
         ) {
             if (viewModel.cargando) {
                 CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
