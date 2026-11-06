@@ -59,48 +59,6 @@ Persistencia.kt del profesor muestra remember y una alternativa rememberSaveable
 
 Al actualizar desde la versión anterior, iniciar sesión una vez para que se guarde la marca. No se borran cuentas ni incidencias al migrar de Room 6 a 7. Borrar datos o desinstalar sí elimina la base local.
 
-## Relación con los ejemplos del profesor
-
-Repositorio revisado: [amaurelia/basic-app](https://github.com/amaurelia/basic-app).
-
-- [Navegacion.kt](https://github.com/amaurelia/basic-app/blob/master/app/src/main/java/cl/duoc/basico/ui/Navegacion.kt): rememberNavController, NavHost, composable y navigate. CuidApp usa la versión 2.9.5 que declara el catálogo del profesor (su Gradle también incluye otra declaración antigua; no se copia esa duplicación). popBackStack vuelve a la pantalla anterior y popUpTo limpia el historial al entrar o salir de la sesión.
-
-- [Inputs.kt](https://github.com/amaurelia/basic-app/blob/master/app/src/main/java/cl/duoc/basico/ui/Inputs.kt): formularios y selectores. Se adaptan las opciones al caso de incidencias.
-- [UsuarioFormViewModel.kt](https://github.com/amaurelia/basic-app/blob/master/app/src/main/java/cl/duoc/basico/viewmodel/UsuarioFormViewModel.kt): validaciones fuera de la vista y expresión de correo. El mínimo de contraseña y la confirmación son reglas previas de CuidApp.
-- [CamaraFotos.kt](https://github.com/amaurelia/basic-app/blob/master/app/src/main/java/cl/duoc/basico/ui/CamaraFotos.kt): permiso, TakePicture y FileProvider. CuidApp reduce la foto antes de guardarla en Room; no depende solamente del archivo temporal de caché.
-- [CancionDao.kt](https://github.com/amaurelia/basic-app/blob/master/app/src/main/java/cl/duoc/basico/model/CancionDao.kt) y [CancionViewModel.kt](https://github.com/amaurelia/basic-app/blob/master/app/src/main/java/cl/duoc/basico/viewmodel/CancionViewModel.kt): DAO, repositorio y viewModelScope para persistir. La consulta de CuidApp muestra todos los reportes, sin el límite de tres canciones del ejemplo. El DAO devuelve List mediante suspend y el ViewModel recarga la lista después de los cambios, siguiendo ese ejemplo.
-- [Animacion.kt](https://github.com/amaurelia/basic-app/blob/master/app/src/main/java/cl/duoc/basico/ui/Animacion.kt): indicador de carga. Aquí acompaña una operación real, sin una espera artificial.
-- [Login.kt](https://github.com/amaurelia/basic-app/blob/master/app/src/main/java/cl/duoc/basico/ui/Login.kt): campos y modal. Ese ejemplo no autentica; la autenticación local con Room es un avance posterior propio de CuidApp, coherente con la recomendación del docente.
-
-## Explicación oral
-
-“NavHost define las pantallas y NavController permite ir y volver. La pantalla recibe los datos y muestra los errores. El ViewModel valida y llama al repositorio. El repositorio usa el DAO para leer o escribir en Room. Al guardar, el botón se bloquea para evitar toques repetidos. Después de guardar o actualizar, el ViewModel vuelve a consultar Room y actualiza la lista. La cámara entrega una foto de prueba, que reducimos para no guardar una imagen enorme. El botón de GPS pide permiso y obtiene una ubicación; sus coordenadas se guardan con la incidencia. Los estados y el historial representan una gestión simulada; los permisos por rol quedan pendientes.”
-
-Las cuentas conservan el hash SHA-256 existente, no la contraseña original. La conversión a texto se expresa con formato hexadecimal para evitar operaciones de bits en ese método. Es el mecanismo sencillo ya existente de este prototipo local; no se presenta como autenticación de producción.
-
-## GPS basado en el ejemplo del profesor
-
-Referencia: [GPS.kt](https://github.com/amaurelia/basic-app/blob/master/app/src/main/java/cl/duoc/basico/ui/GPS.kt). Se conserva FusedLocationProviderClient y su dependencia play-services-location 21.0.1.
-
-CuidApp usa getCurrentLocation para pedir una sola lectura (en vez de requestLocationUpdates del ejemplo), con un límite de 15 segundos. Los permisos preciso y aproximado se solicitan juntos para funcionar en Android actual. El usuario puede rechazar el permiso y guardar sin ubicación. No se usa ubicación en segundo plano ni se agrega mapa. El borrador conserva las coordenadas en el ViewModel y Room utiliza las columnas latitud/longitud ya existentes, sin cambiar el esquema.
-
-Para demostrarlo, usar ubicación simulada del emulador y datos ficticios. Ver `docs/gps-2026-10-28.md`.
-
-## Pauta y pendientes
-
-| Requisito | Situación del avance |
-|---|---|
-| Formulario, errores por campo y lógica separada | Implementados; comprobaciones automatizadas de incidencias |
-| Imagen y modal | Logo, foto opcional y diálogos |
-| Animación | Carga de operaciones y aparición de mensajes |
-| Room y MVVM | Implementados para usuarios e incidencias |
-| Navegación entre vistas | Implementada; corregida conservación al recrear actividad |
-| Recursos nativos | Cámara y GPS implementados; completar prueba manual de cámara y permisos en dispositivo |
-| Git y Trello | Repositorio y tablero enlazados; mostrar participación real y tareas actualizadas |
-| Vídeo corto | Pendiente de grabar por el equipo |
-
-El mensaje del docente menciona al menos un recurso nativo, pero el PDF de Evaluación Parcial 2 exige dos en su requisito y en IE 2.4.1. Se implementan cámara y GPS; no se sustituye una lectura de GPS por coordenadas fijas en el código. En las pruebas se inyectan coordenadas ficticias desde el emulador. El mapa queda para otra clase. No se inventan evidencias de colaboración, fechas ni nombres.
-
 ## Comprobaciones
 
 ```powershell
