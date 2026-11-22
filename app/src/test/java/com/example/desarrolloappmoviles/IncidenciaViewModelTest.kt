@@ -139,6 +139,93 @@ class IncidenciaViewModelTest {
         assertNull(dao.registros.value.single().latitud)
     }
 
+    @Test fun filtraIncidenciasPorEstadoDesdeElRepositorio() {
+        val vm = formularioCompleto()
+        val ingresada = incidenciaPrueba(1, "Ingresada")
+        val cerrada = incidenciaPrueba(2, "Cerrada")
+        dao.registros.value = listOf(ingresada, cerrada)
+
+        vm.filtrarIncidenciasPorEstado("Cerrada")
+
+        assertEquals(listOf(cerrada), vm.incidencias.value)
+        assertEquals("", vm.errorConsulta)
+    }
+
+    @Test fun eliminaLaIncidenciaSeleccionadaYActualizaLaLista() {
+        val vm = formularioCompleto()
+        val conservar = incidenciaPrueba(1, "Ingresada")
+        val eliminar = incidenciaPrueba(2, "Ingresada")
+        dao.registros.value = listOf(conservar, eliminar)
+        vm.incidencias.value = dao.registros.value
+
+        vm.eliminarIncidencia(eliminar.id)
+
+        assertEquals(listOf(conservar), vm.incidencias.value)
+        assertEquals(listOf(conservar), dao.registros.value)
+        assertFalse(vm.eliminandoIncidencia)
+        assertEquals("", vm.errorConsulta)
+    }
+
+    @Test fun cargarDetalleActualizaLaListaYNotificaSiElIdNoExiste() {
+        val vm = formularioCompleto()
+        val detalle = incidenciaPrueba(4, "Ingresada")
+        dao.registros.value = listOf(detalle)
+
+        vm.cargarIncidencia(detalle.id)
+        assertTrue(vm.incidencias.value.contains(detalle))
+        assertEquals("", vm.errorConsulta)
+
+        vm.cargarIncidencia(999)
+        assertEquals("No se pudo cargar el detalle de la incidencia.", vm.errorConsulta)
+    }
+
+    @Test fun accionesDeGestionActualizanEstadoYEvitanCambiosRepetidos() {
+        val vm = formularioCompleto()
+        val original = incidenciaPrueba(5, "Ingresada")
+        dao.registros.value = listOf(original)
+
+        vm.asignarInspector(original)
+        val asignada = dao.registros.value.single()
+        assertEquals("En revisión", asignada.estado)
+        assertEquals("Inspector municipal de prueba", asignada.responsable)
+        assertTrue(asignada.historialAcciones.orEmpty().contains("Incidencia asignada"))
+
+        vm.asignarInspector(asignada)
+        assertEquals(asignada, dao.registros.value.single())
+        vm.cerrarIncidencia(asignada)
+        assertEquals("Cerrada", dao.registros.value.single().estado)
+    }
+
+    @Test fun informaFallosDeCargaFiltroEliminacionYGestion() {
+        val vm = formularioCompleto()
+        dao.fallarLectura = true
+        vm.cargarIncidencias()
+        assertEquals("No se pudieron cargar las incidencias. Intenta nuevamente.", vm.errorConsulta)
+        vm.filtrarIncidenciasPorEstado("Cerrada")
+        assertEquals("No se pudieron filtrar las incidencias.", vm.errorConsulta)
+        dao.fallarEliminar = true
+        vm.eliminarIncidencia(8)
+        assertEquals("No se pudo eliminar la incidencia. Intenta nuevamente.", vm.errorConsulta)
+
+        dao.fallarLectura = false
+        val incidencia = incidenciaPrueba(9, "Ingresada")
+        dao.registros.value = listOf(incidencia)
+        dao.fallarActualizar = true
+        vm.asignarInspector(incidencia)
+        assertEquals("No se pudo actualizar la incidencia.", vm.errorGestion)
+        assertFalse(vm.gestionando)
+    }
+
+    private fun incidenciaPrueba(id: Long, estado: String) = IncidenciaEntity(
+        id = id,
+        categoria = "Iluminación",
+        descripcion = "Reporte de prueba de una luminaria",
+        prioridad = "Media",
+        sector = "Sector A",
+        estado = estado,
+        correoUsuario = "vecino@ejemplo.com"
+    )
+
     private fun formularioCompleto() = nuevoViewModel().apply {
         categoria = "Iluminación"
         descripcion = "Luminaria apagada en un sector ficticio."
@@ -150,8 +237,14 @@ class IncidenciaViewModelTest {
 // Sustituye solo la base de datos durante las pruebas; no cambia el código de la app.
 private class IncidenciaDaoDePrueba : IncidenciaDao {
     var fallar = false
+    var fallarLectura = false
+    var fallarActualizar = false
+    var fallarEliminar = false
     val registros = MutableStateFlow<List<IncidenciaEntity>>(emptyList())
-    override suspend fun obtenerTodas() = registros.value
+    override suspend fun obtenerTodas(): List<IncidenciaEntity> {
+        check(!fallarLectura) { "Fallo de lectura" }
+        return registros.value
+    }
     override suspend fun insertar(incidencia: IncidenciaEntity): Long {
         check(!fallar) { "Fallo de prueba" }
         val id = (registros.value.maxOfOrNull { it.id } ?: 0) + 1
@@ -159,6 +252,11 @@ private class IncidenciaDaoDePrueba : IncidenciaDao {
         return id
     }
     override suspend fun actualizar(incidencia: IncidenciaEntity) {
+        check(!fallarActualizar) { "Fallo al actualizar" }
         registros.value = registros.value.map { if (it.id == incidencia.id) incidencia else it }
+    }
+    override suspend fun eliminar(id: Long) {
+        check(!fallarEliminar) { "Fallo al eliminar" }
+        registros.value = registros.value.filterNot { it.id == id }
     }
 }

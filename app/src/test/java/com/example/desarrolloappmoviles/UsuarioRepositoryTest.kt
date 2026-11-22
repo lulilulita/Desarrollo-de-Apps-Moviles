@@ -14,6 +14,33 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class UsuarioRepositoryTest {
+    @Test fun validaRegistroCorreoClaveYConfirmacion() {
+        val repositorio = UsuarioRepository(UsuarioDaoDePrueba())
+        val vacio = repositorio.validarRegistro("", "", "", "", "")
+        assertFalse(vacio.esValido)
+        assertTrue(vacio.nombre.isNotEmpty())
+        assertTrue(vacio.apellido.isNotEmpty())
+        assertTrue(vacio.correo.isNotEmpty())
+        assertTrue(vacio.contrasena.isNotEmpty())
+        assertTrue(vacio.confirmacion.isNotEmpty())
+
+        assertTrue(repositorio.validarRegistro("A", "B", "correo", "clave123", "otra").correo.isNotEmpty())
+        assertTrue(repositorio.validarRegistro("A", "B", "a@b.cl", "123", "123").contrasena.isNotEmpty())
+        assertTrue(repositorio.validarRegistro("A", "B", "a@b.cl", "clave123", "otra").confirmacion.isNotEmpty())
+        assertTrue(repositorio.validarRegistro("A", "B", "a@b.cl", "clave123", "clave123").esValido)
+    }
+
+    @Test fun validaCamposDelLogin() {
+        val repositorio = UsuarioRepository(UsuarioDaoDePrueba())
+        val vacio = repositorio.validarLogin("", "")
+        assertFalse(vacio.esValido)
+        assertTrue(vacio.correo.isNotEmpty())
+        assertTrue(vacio.contrasena.isNotEmpty())
+        assertTrue(repositorio.validarLogin("no-es-correo", "clave123").correo.isNotEmpty())
+        assertTrue(repositorio.validarLogin("a@b.cl", "123").contrasena.isNotEmpty())
+        assertTrue(repositorio.validarLogin("a@b.cl", "clave123").esValido)
+    }
+
     @Test fun conservaLaCompatibilidadConUnaCuentaAnterior() = runBlocking {
         val dao = UsuarioDaoDePrueba()
         dao.usuario = UsuarioEntity(correo = "vecino@ejemplo.com", contrasenaHash = "5ac0852e770506dcd80f1a36d20ba7878bf82244b836d9324593bd14bc56dcb5")

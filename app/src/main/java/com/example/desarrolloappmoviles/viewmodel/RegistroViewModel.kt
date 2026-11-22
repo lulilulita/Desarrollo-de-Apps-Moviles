@@ -29,43 +29,20 @@ class RegistroViewModel(
     var cargando by mutableStateOf(false)
         private set
 
-    private fun validacionCorreo(): Boolean =
-        correo.trim().matches(Regex("^[\\w.-]+@[\\w.-]+\\.\\w+$"))
-
     fun validarRegistro() {
         if (cargando) return
-        errorNombre = if (nombre.isBlank()) "Ingresa tu nombre" else ""
-        errorApellido = if (apellido.isBlank()) "Ingresa tu apellido" else ""
-
-        errorCorreo = when {
-            correo.isBlank() -> "Ingresa tu correo"
-            !validacionCorreo() -> "Ingresa un correo válido"
-            else -> ""
-        }
-
-        errorContrasena = when {
-            contrasena.isBlank() -> "Ingresa tu contraseña"
-            contrasena.length < 6 ->
-                "La contraseña debe tener al menos 6 caracteres"
-            else -> ""
-        }
-
-        errorConfirmacion = when {
-            confirmarContrasena.isBlank() -> "Confirma tu contraseña"
-            confirmarContrasena != contrasena ->
-                "Las contraseñas no coinciden"
-            else -> ""
-        }
+        val errores = repository.validarRegistro(nombre, apellido, correo, contrasena, confirmarContrasena)
+        errorNombre = errores.nombre
+        errorApellido = errores.apellido
+        errorCorreo = errores.correo
+        errorContrasena = errores.contrasena
+        errorConfirmacion = errores.confirmacion
 
         mensaje = ""
         registroExitoso = false
 
         if (
-            errorNombre.isEmpty() &&
-            errorApellido.isEmpty() &&
-            errorCorreo.isEmpty() &&
-            errorContrasena.isEmpty() &&
-            errorConfirmacion.isEmpty()
+            errores.esValido
         ) {
             val nombreActual = nombre
             val apellidoActual = apellido

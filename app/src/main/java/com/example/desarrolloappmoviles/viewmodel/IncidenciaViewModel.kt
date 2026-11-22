@@ -24,6 +24,8 @@ class IncidenciaViewModel(
     // Como en CancionViewModel: leer la lista y recargar después de guardar o actualizar.
     val incidencias = MutableStateFlow<List<IncidenciaEntity>>(emptyList())
     var errorConsulta by mutableStateOf("")
+    var eliminandoIncidencia by mutableStateOf(false)
+        private set
 
     init { cargarIncidencias() }
 
@@ -37,6 +39,43 @@ class IncidenciaViewModel(
             } catch (_: Exception) {
                 errorConsulta = "No se pudieron cargar las incidencias. Intenta nuevamente."
             }
+        }
+    }
+
+    fun filtrarIncidenciasPorEstado(estado: String) {
+        viewModelScope.launch {
+            try { incidencias.value = repository.filtrarPorEstado(estado); errorConsulta = "" }
+            catch (cancelacion: CancellationException) { throw cancelacion }
+            catch (_: Exception) { errorConsulta = "No se pudieron filtrar las incidencias." }
+        }
+    }
+
+    fun eliminarIncidencia(id: Long) {
+        if (eliminandoIncidencia) return
+        eliminandoIncidencia = true
+        viewModelScope.launch {
+            try {
+                repository.eliminar(id)
+                incidencias.value = incidencias.value.filterNot { it.id == id }
+                errorConsulta = ""
+            } catch (cancelacion: CancellationException) {
+                throw cancelacion
+            } catch (_: Exception) {
+                errorConsulta = "No se pudo eliminar la incidencia. Intenta nuevamente."
+            } finally {
+                eliminandoIncidencia = false
+            }
+        }
+    }
+
+    fun cargarIncidencia(id: Long) {
+        viewModelScope.launch {
+            try {
+                val incidencia = repository.obtenerPorId(id)
+                incidencias.value = (incidencias.value.filterNot { it.id == id } + incidencia)
+                errorConsulta = ""
+            } catch (cancelacion: CancellationException) { throw cancelacion }
+            catch (_: Exception) { errorConsulta = "No se pudo cargar el detalle de la incidencia." }
         }
     }
     var categoria by mutableStateOf("")
@@ -66,26 +105,16 @@ class IncidenciaViewModel(
 
     fun validarIncidencia() {
         if (guardando || mostrarConfirmacion || obteniendoUbicacion) return
-        errorCategoria = if (categoria !in categorias) "Selecciona una categoría" else ""
-        errorDescripcion = when {
-            descripcion.isBlank() -> "Describe la incidencia"
-            descripcion.trim().length < 10 -> "Escribe al menos 10 caracteres"
-            descripcion.length > 300 -> "El máximo es de 300 caracteres"
-            else -> ""
-        }
-        errorPrioridad = if (prioridad !in prioridades) "Selecciona una prioridad" else ""
-        errorSector = if (sector !in sectores) "Selecciona un sector ficticio" else ""
-
-        val formularioValido =
-            errorCategoria.isEmpty() &&
-                    errorDescripcion.isEmpty() &&
-                    errorPrioridad.isEmpty() &&
-                    errorSector.isEmpty()
+        val errores = repository.validarIncidencia(categoria, descripcion, prioridad, sector)
+        errorCategoria = errores.categoria
+        errorDescripcion = errores.descripcion
+        errorPrioridad = errores.prioridad
+        errorSector = errores.sector
 
         mostrarConfirmacion = false
         errorGuardado = ""
 
-        if (!formularioValido) return
+        if (!errores.esValido) return
         val incidencia = IncidenciaEntity(
             categoria = categoria,
             descripcion = descripcion.trim(),
@@ -135,7 +164,8 @@ class IncidenciaViewModel(
             incidencia = incidencia,
             accion = "Incidencia asignada a inspector de prueba",
             nuevoEstado = "En revisión",
-            nuevoResponsable = "Inspector municipal de prueba"
+            nuevoResponsable = "Inspector municipal de prueba",
+            reemplazoCompleto = true
         )
     }
 
@@ -144,7 +174,8 @@ class IncidenciaViewModel(
             incidencia = incidencia,
             accion = "Caso cerrado",
             nuevoEstado = "Cerrada",
-            nuevoResponsable = incidencia.responsable
+            nuevoResponsable = incidencia.responsable,
+            reemplazoCompleto = false
         )
     }
 
@@ -152,7 +183,8 @@ class IncidenciaViewModel(
         incidencia: IncidenciaEntity,
         accion: String,
         nuevoEstado: String,
-        nuevoResponsable: String
+        nuevoResponsable: String,
+        reemplazoCompleto: Boolean
     ) {
         if (gestionando || incidencia.estado == "Cerrada") return
         if (incidencia.estado == nuevoEstado && incidencia.responsable == nuevoResponsable) return
@@ -175,7 +207,8 @@ class IncidenciaViewModel(
                         estado = nuevoEstado,
                         responsable = nuevoResponsable,
                         historialAcciones = historialActualizado
-                    )
+                    ),
+                    reemplazoCompleto
                 )
                 cargarIncidencias()
             } catch (cancelacion: CancellationException) {

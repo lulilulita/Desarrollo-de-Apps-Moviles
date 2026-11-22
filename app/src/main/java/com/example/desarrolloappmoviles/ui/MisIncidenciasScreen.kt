@@ -18,19 +18,27 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -56,6 +64,9 @@ fun MisIncidenciasScreen(
 ) {
     val incidencias by viewModel.incidencias.collectAsState()
     var pestanaSeleccionada by rememberSaveable { mutableIntStateOf(0) }
+    var estadoSeleccionado by rememberSaveable { mutableStateOf("Todos") }
+    var menuEstadosAbierto by remember { mutableStateOf(false) }
+    var incidenciaPorEliminar by remember { mutableStateOf<IncidenciaEntity?>(null) }
     val correoUsuario = viewModel.correoUsuarioActual
         .trim()
         .lowercase()
@@ -116,7 +127,12 @@ fun MisIncidenciasScreen(
 
         if (viewModel.errorConsulta.isNotEmpty()) {
             Text(viewModel.errorConsulta, color = MaterialTheme.colorScheme.error)
-            OutlinedButton(onClick = { viewModel.cargarIncidencias() }) { Text("Reintentar") }
+            OutlinedButton(
+                onClick = {
+                    if (estadoSeleccionado == "Todos") viewModel.cargarIncidencias()
+                    else viewModel.filtrarIncidenciasPorEstado(estadoSeleccionado)
+                }
+            ) { Text("Reintentar") }
         }
 
         PrimaryTabRow(selectedTabIndex = pestanaSeleccionada) {
@@ -134,6 +150,28 @@ fun MisIncidenciasScreen(
                     Text("Comunidad (${incidenciasOtrosSectores.size})")
                 }
             )
+        }
+
+        Box {
+            OutlinedButton(onClick = { menuEstadosAbierto = true }) {
+                Text("Estado: $estadoSeleccionado")
+            }
+            DropdownMenu(
+                expanded = menuEstadosAbierto,
+                onDismissRequest = { menuEstadosAbierto = false }
+            ) {
+                listOf("Todos", "Ingresada", "En revisión", "Cerrada").forEach { estado ->
+                    DropdownMenuItem(
+                        text = { Text(estado) },
+                        onClick = {
+                            estadoSeleccionado = estado
+                            menuEstadosAbierto = false
+                            if (estado == "Todos") viewModel.cargarIncidencias()
+                            else viewModel.filtrarIncidenciasPorEstado(estado)
+                        }
+                    )
+                }
+            }
         }
 
         if (incidenciasVisibles.isEmpty()) {
@@ -170,7 +208,10 @@ fun MisIncidenciasScreen(
             incidenciasVisibles.forEach { incidencia ->
                 IncidenciaCard(
                     incidencia = incidencia,
-                    alTocar = { abrirDetalle(incidencia) }
+                    alTocar = { abrirDetalle(incidencia) },
+                    alSolicitarEliminar = if (pestanaSeleccionada == 0) {
+                        { incidenciaPorEliminar = incidencia }
+                    } else null
                 )
             }
         }
@@ -183,12 +224,33 @@ fun MisIncidenciasScreen(
             Text("Volver al inicio")
         }
     }
+
+    incidenciaPorEliminar?.let { incidencia ->
+        AlertDialog(
+            onDismissRequest = { incidenciaPorEliminar = null },
+            title = { Text("Eliminar incidencia") },
+            text = { Text("¿Quieres eliminar este reporte? Esta acción no se puede deshacer.") },
+            confirmButton = {
+                TextButton(
+                    enabled = !viewModel.eliminandoIncidencia,
+                    onClick = {
+                        viewModel.eliminarIncidencia(incidencia.id)
+                        incidenciaPorEliminar = null
+                    }
+                ) { Text("Eliminar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { incidenciaPorEliminar = null }) { Text("Cancelar") }
+            }
+        )
+    }
 }
 
 @Composable
 private fun IncidenciaCard(
     incidencia: IncidenciaEntity,
-    alTocar: () -> Unit
+    alTocar: () -> Unit,
+    alSolicitarEliminar: (() -> Unit)? = null
 ) {
     val foto = remember(
         incidencia.id,
@@ -269,6 +331,21 @@ private fun IncidenciaCard(
                             vertical = 6.dp
                         )
                     )
+                }
+            }
+
+            if (alSolicitarEliminar != null) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    IconButton(onClick = alSolicitarEliminar) {
+                        Icon(
+                            imageVector = Icons.Filled.Delete,
+                            contentDescription = "Eliminar mi incidencia",
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    }
                 }
             }
 

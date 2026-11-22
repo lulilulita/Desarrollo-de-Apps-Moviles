@@ -46,9 +46,6 @@ class LoginViewModel(
         }
     }
 
-    private fun validacionCorreo(): Boolean =
-        correo.trim().matches(Regex("^[\\w.-]+@[\\w.-]+\\.\\w+$"))
-
     fun cerrarSesion() {
         if (cargando) return
         cargando = true
@@ -75,18 +72,9 @@ class LoginViewModel(
 
     fun validarLogin() {
         if (cargando || restaurandoSesion) return
-        errorCorreo = when {
-            correo.isBlank() -> "Ingresa tu correo"
-            !validacionCorreo() -> "Ingresa un correo válido"
-            else -> ""
-        }
-
-        errorContrasena = when {
-            contrasena.isBlank() -> "Ingresa tu contraseña"
-            contrasena.length < 6 ->
-                "La contraseña debe tener al menos 6 caracteres"
-            else -> ""
-        }
+        val errores = repository.validarLogin(correo, contrasena)
+        errorCorreo = errores.correo
+        errorContrasena = errores.contrasena
 
         mensaje = ""
         loginExitoso = false

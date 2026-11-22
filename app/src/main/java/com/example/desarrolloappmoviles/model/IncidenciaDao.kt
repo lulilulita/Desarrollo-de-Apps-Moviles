@@ -16,4 +16,7 @@ interface IncidenciaDao {
     @Update
     suspend fun actualizar(incidencia: IncidenciaEntity)
 
+    @Query("DELETE FROM incidencias WHERE id = :id")
+    suspend fun eliminar(id: Long)
+
 }

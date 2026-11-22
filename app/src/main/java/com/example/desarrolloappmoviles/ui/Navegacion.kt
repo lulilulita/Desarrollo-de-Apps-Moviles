@@ -110,8 +110,10 @@ fun Navegacion(
             )
         }
         composable("detalle/{id}", arguments = listOf(navArgument("id") { type = NavType.LongType })) { pantalla ->
+            val idIncidencia = pantalla.arguments?.getLong("id") ?: 0L
+            LaunchedEffect(idIncidencia) { incidenciaViewModel.cargarIncidencia(idIncidencia) }
             DetalleIncidenciaScreen(
-                incidenciaId = pantalla.arguments?.getLong("id") ?: 0L,
+                incidenciaId = idIncidencia,
                 viewModel = incidenciaViewModel,
                 volver = { navController.popBackStack() }
             )
