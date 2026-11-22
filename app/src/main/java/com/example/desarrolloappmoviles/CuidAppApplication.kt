@@ -7,6 +7,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.desarrolloappmoviles.model.CuidAppDatabase
 import com.example.desarrolloappmoviles.repository.IncidenciaRepository
 import com.example.desarrolloappmoviles.repository.UsuarioRepository
+import com.example.desarrolloappmoviles.repository.RetrofitInstance
 
 class CuidAppApplication : Application() {
 
@@ -21,7 +22,7 @@ class CuidAppApplication : Application() {
     }
 
     val incidenciaRepository: IncidenciaRepository by lazy {
-        IncidenciaRepository(database.incidenciaDao())
+        IncidenciaRepository(database.incidenciaDao(), RetrofitInstance.api)
     }
 
     val usuarioRepository: UsuarioRepository by lazy {
