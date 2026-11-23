@@ -58,7 +58,27 @@ La firma usa un archivo local `keystore.properties` y una keystore `.jks` guarda
 
 El APK queda en `app/build/outputs/apk/release/app-release.apk`. Si la keystore o sus datos no están configurados en el computador, primero hay que recuperarlos; no se debe crear una keystore nueva para una actualización si ya existe una usada anteriormente, porque Android no aceptará la actualización firmada con otra clave.
 
-## 3. Arquitectura: quién hace qué
+## 3. Qué agregamos y qué modificamos para esta evaluación
+
+La entrega de Ev. 3 amplió el avance anterior para que las incidencias fueran compartidas desde Xano y para que la lógica quedara mejor separada. Estos son los cambios concretos que conviene poder explicar:
+
+| Cambio | Qué permite | Dónde quedó |
+|---|---|---|
+| Conexión Retrofit/Gson y URL base de Xano | Enviar/recibir JSON por internet | `app/build.gradle.kts`, `RetrofitInstance.kt`, `AndroidManifest.xml` |
+| Siete operaciones de API | Listar, crear, consultar, filtrar, reemplazar, actualizar y borrar incidencias | `XanoApiService.kt` |
+| Modelo de intercambio API | Adaptar nombres/tipos entre la tabla de Xano y el objeto de Android | `IncidenciaApiModel.kt` |
+| Repository remoto de incidencias | Llamar a Xano, validar los campos y convertir los resultados | `IncidenciaRepository.kt` |
+| Validaciones en repositories | Centralizar reglas de correo/contraseña/registro/incidencia | `UsuarioRepository.kt`, `IncidenciaRepository.kt` |
+| ViewModels ajustados | Pedir validaciones y coordinar peticiones sin definir reglas de negocio | `LoginViewModel.kt`, `RegistroViewModel.kt`, `IncidenciaViewModel.kt` |
+| Filtro por estado y eliminación confirmada | Encontrar reportes y borrar un reporte propio desde la lista | `MisIncidenciasScreen.kt`, `IncidenciaViewModel.kt` |
+| Detalle consultado por ID | Cargar el registro remoto que se abrió | `Navegacion.kt`, `IncidenciaViewModel.kt`, `IncidenciaRepository.kt` |
+| Pruebas adicionales | Cubrir repositories, validaciones y flujos | `app/src/test/` y `app/src/androidTest/` |
+| Firma release no versionada | Crear el APK firmado sin subir claves privadas | `app/build.gradle.kts`, `.gitignore`, archivo local `keystore.properties` |
+| Documentación de entrega | Explicar arquitectura, endpoints, pruebas y ejecución | `README.md` y este apunte |
+
+La cámara y el GPS son los dos recursos nativos de la app. La cámara se probó con permiso aceptado y denegado. La prueba conectada completa pasó con **2 pruebas instrumentadas y 0 fallas**; el conjunto local contiene **29 pruebas unitarias**.
+
+## 4. Arquitectura: quién hace qué
 
 El flujo de una incidencia nueva es:
 
@@ -85,7 +105,7 @@ NuevaIncidenciaScreen
 
 **Regla pedida por el profesor:** las validaciones están en repositories. El ViewModel pide los errores al repository y los distribuye a los campos de la pantalla; no define ahí reglas como correo válido o largo mínimo.
 
-## 4. Datos locales y remotos
+## 5. Datos locales y remotos
 
 - **Room/SQLite local:** cuentas, hash de contraseña y marca de sesión activa. Por eso la sesión se recuerda en el mismo dispositivo.
 - **Xano remoto:** incidencias compartidas. Distintos dispositivos conectados al mismo backend consultan la misma tabla.
@@ -94,7 +114,7 @@ NuevaIncidenciaScreen
 
 El login/registro del proyecto sigue siendo local. Xano se utiliza para las incidencias, no como autenticación de usuarios.
 
-## 5. Xano y los siete endpoints
+## 6. Xano y los siete endpoints
 
 La URL base se declara como `XANO_BASE_URL` en `app/build.gradle.kts`. `IncidenciaApiModel` traduce entre los nombres/tipos de Xano y `IncidenciaEntity`. Las siete rutas configuradas en `XanoApiService` son:
 
@@ -112,7 +132,7 @@ Así se cumple la variedad de métodos HTTP exigida: hay operaciones GET y POST,
 
 **Términos:** endpoint es una ruta/operación disponible; GET consulta; POST crea; PUT reemplaza el registro; PATCH modifica parcialmente; DELETE elimina; JSON es el formato de intercambio; Retrofit realiza la petición y Gson convierte JSON a objetos Kotlin.
 
-## 6. Funciones que conviene demostrar
+## 7. Funciones que conviene demostrar
 
 1. Registro y login; la app normaliza el correo y guarda la sesión local.
 2. Crear una incidencia con categoría, descripción de al menos 10 caracteres, prioridad y sector.
@@ -124,7 +144,7 @@ Así se cumple la variedad de métodos HTTP exigida: hay operaciones GET y POST,
 
 No dependas de que Xano tenga registros de ejemplo. Si la tabla está vacía, registrar una incidencia durante la demostración. Las llamadas repetidas muy rápido pueden recibir limitación temporal del servicio (HTTP 429); espera antes de repetirlas.
 
-## 7. Recursos nativos y permisos
+## 8. Recursos nativos y permisos
 
 **Cámara:** `NuevaIncidenciaScreen` solicita `Manifest.permission.CAMERA` durante el uso. Si se concede, crea un archivo temporal, lo comparte con `FileProvider` y abre `TakePicture`. Si se deniega, muestra un mensaje y permite seguir sin foto. Para demostrarla, usa un dispositivo/emulador con cámara disponible, concede el permiso, captura y acepta la foto.
 
@@ -132,7 +152,7 @@ No dependas de que Xano tenga registros de ejemplo. Si la tabla está vacía, re
 
 Declarar permiso en `AndroidManifest.xml` no equivale a tenerlo concedido: Android también pide autorización en tiempo de ejecución. La evaluación requiere que el equipo pueda demostrar los dos recursos nativos; conviene verificar ambos en el mismo equipo que usarán para defender.
 
-## 8. Pruebas y qué prueban
+## 9. Pruebas y qué prueban
 
 - `IncidenciaViewModelTest`: coordinación y estado del formulario, validación delegada, guardado, gestión y respuestas ante fallos con repository de prueba.
 - `IncidenciaRepositoryTest`: reglas de incidencia y operaciones/mapeo usando un servicio sustituido.
@@ -141,7 +161,7 @@ Declarar permiso en `AndroidManifest.xml` no equivale a tenerlo concedido: Andro
 
 Las pruebas unitarias no sustituyen una verificación real del backend ni de los permisos del dispositivo. La prueba instrumentada requiere emulador conectado. La verificación manual de cámara/GPS comprueba hardware/permisos que no se cubren completamente con pruebas locales.
 
-## 9. Requisitos de Ev. 3: checklist de evidencia
+## 10. Requisitos de Ev. 3: checklist de evidencia
 
 | Requisito compartido | Evidencia preparada | Qué revisar antes de entregar |
 |---|---|---|
@@ -158,11 +178,11 @@ Las pruebas unitarias no sustituyen una verificación real del backend ni de los
 
 El encargo de Ev. 3 pide enviar únicamente el APK. README, repositorio y Trello sirven como documentación/evidencia para revisión, pero el archivo solicitado para la entrega práctica es el APK. El plazo y porcentaje deben confirmarse con la pauta vigente del curso.
 
-## 10. Guion breve para la defensa
+## 11. Guion breve para la defensa
 
 > “CuidApp registra incidencias comunitarias. La interfaz está hecha con Compose. La pantalla recoge los datos y presenta errores; el ViewModel mantiene el estado y coordina las operaciones; los repositories validan y acceden a los datos. Las cuentas y la sesión quedan en Room local. Las incidencias usan Retrofit para conectarse a Xano. El servicio tiene siete rutas: listar, crear, consultar por ID, reemplazar, actualizar parcialmente, eliminar y filtrar por estado. La cámara y la ubicación son recursos nativos opcionales. Las pruebas unitarias cubren la lógica y las pruebas instrumentadas ejecutan flujos de pantalla en Android.”
 
-## 11. Preguntas para estudiar
+## 12. Preguntas para estudiar
 
 1. **¿Qué guarda Room y qué guarda Xano?** Room mantiene usuarios/sesión en el teléfono; Xano almacena incidencias compartidas.
 2. **¿Dónde están las validaciones?** En los repositories; el ViewModel las solicita y conserva el resultado para la pantalla.
@@ -180,7 +200,46 @@ El encargo de Ev. 3 pide enviar únicamente el APK. README, repositorio y Trello
 14. **¿Qué se debe proteger en Git?** Contraseñas y archivo de keystore de firma; `.gitignore` excluye esas credenciales.
 15. **¿Qué haces si Xano responde 429?** Espero el límite temporal y pruebo de nuevo sin generar una ráfaga de solicitudes.
 
-## 12. Plan de estudio práctico
+## 13. Si el profesor pide cambiar algo: qué archivos tocar
+
+No cambies una regla en cualquier archivo “hasta que funcione”. Primero identifica qué comportamiento pide y sigue la responsabilidad de cada capa:
+
+| Pedido/cambio | Cambia primero | También revisa | Prueba mínima después |
+|---|---|---|---|
+| Cambiar mínimo/máximo de descripción | `IncidenciaRepository.validarIncidencia` | Texto de ayuda/error de `NuevaIncidenciaScreen` | Probar un texto justo debajo, en el límite y sobre el límite |
+| Agregar una regla de correo/contraseña | `UsuarioRepository.validarLogin` o `validarRegistro` | Errores que el `ViewModel` entrega a los campos | Casos válido, vacío y formato inválido en test unitario |
+| Agregar otro estado de incidencia | Endpoint/filtro en Xano si aplica | Opciones de `MisIncidenciasScreen`, valor exacto de Xano y prueba del filtro | Elegir el estado y confirmar respuesta de Xano |
+| Agregar un endpoint | `XanoApiService` | Operación correspondiente en `IncidenciaRepository`, luego método/estado del ViewModel y acción/pantalla | Ejecutar el endpoint en Xano y probar éxito/error en repository |
+| Agregar un campo enviado a Xano | Tabla/API de Xano y `IncidenciaApiModel` | Conversión `desde`/`aEntidad`, entidad y pantalla/ViewModel si el usuario lo edita | Crear y volver a consultar; comparar JSON y valores |
+| Agregar un campo que además se guarde en Room | `IncidenciaEntity`/`UsuarioEntity` y base de Room | Versión de base, migración, DAO y pruebas | Actualizar desde la versión anterior sin borrar los datos |
+| Cambiar lo que muestra una pantalla | Composable en `ui/` | Estado existente en ViewModel | Ejecutar y probar tamaño/teclado/rotación si corresponde |
+| Agregar una pantalla | `Navegacion.kt` y nuevo Composable | Ruta, parámetros y ViewModel/estado | Abrir, volver con Atrás y recrear actividad |
+| Cambiar cámara o permiso | `NuevaIncidenciaScreen.kt` y `AndroidManifest.xml` si cambia el permiso | Ruta de concesión, rechazo y cancelación | Probar los tres caminos en Android, no solo unit tests |
+| Cambiar GPS | `ui/GPS.kt` | Permisos, mensaje cuando no hay ubicación y envío de coordenadas | Probar permiso aceptado/rechazado y ubicación disponible/no disponible |
+| Cambiar firma o APK | `app/build.gradle.kts` y propiedades locales | Keystore vigente, `applicationId` e instalación de release | Generar release e instalarlo; nunca subir la clave a Git |
+
+### Método para explicar una modificación
+
+1. Di qué comportamiento necesitas cambiar.
+2. Nombra la capa que es dueña de esa regla (UI, ViewModel, repository, API o base de datos).
+3. Explica qué otras capas reciben el dato o el error.
+4. Añade o ajusta una prueba del caso nuevo y del caso límite.
+5. Compila y prueba el recorrido en Android si involucra UI, red o permisos.
+6. Actualiza README/guía si cambió un endpoint, requisito o comando de entrega.
+
+Ejemplo para cambiar el mínimo de descripción: “La regla vive en `IncidenciaRepository`, no en el ViewModel. Cambio ese límite, ajusto el texto mostrado por el formulario y las pruebas de límite. Después pruebo guardar un caso válido desde la app”.
+
+### Cómo investigar un error sin adivinar
+
+- **Error en un campo:** revisa la regla del repository, el campo de estado del ViewModel y el `supportingText` de la pantalla.
+- **No aparece el reporte:** revisa el resultado de POST en Xano, el mapeo `IncidenciaApiModel.desde`, la llamada de `guardar` y la recarga de la lista.
+- **No carga Xano:** revisa internet en el dispositivo, `INTERNET` del manifiesto, URL base con `/` final, nombre/método de la ruta y que el endpoint esté publicado.
+- **No aparecen coordenadas:** revisa permiso en Android, ubicación simulada/servicio activo, resultado de `GPS.kt`, asignación de latitud/longitud y mapeo `coordenadas`.
+- **No funciona el detalle:** verifica que la ruta de navegación reciba el ID correcto y que el ID remoto exista.
+- **El borrado falla:** confirma ID, estado de la respuesta HTTP y límite temporal del API. Un `HTTP 429` indica exceso de solicitudes temporal; no suele arreglarse repitiendo muchas veces seguido.
+- **No compila tras cambiar un campo:** busca todos los constructores y conversiones de la entidad/modelo; un campo nuevo suele requerir actualizar mapeos y tests.
+
+## 14. Plan de estudio práctico
 
 1. Explica el guion oral sin leer y señala en el IDE `MisIncidenciasScreen`, `IncidenciaViewModel`, `IncidenciaRepository` y `XanoApiService`.
 2. Recorre el flujo de crear una incidencia siguiendo el orden de capas y nombra el método HTTP que ocurre.
